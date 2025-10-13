@@ -1,4 +1,25 @@
+import re, json
 
+CODEFENCE_JSON_RE = re.compile(
+    r"```json\s*(\{.*?\})\s*```", re.DOTALL | re.IGNORECASE
+)
+CODEFENCE_ANY_RE = re.compile(
+    r"```\s*(\{.*?\})\s*```", re.DOTALL
+)
+
+def extract_json_codeblock(text: str) -> str | None:
+    """
+    Retourne la *chaîne JSON* à l'intérieur d'un bloc ```json ... ``` si présent.
+    Si pas de bloc avec `json`, tente un bloc ``` ... ``` générique contenant {...}.
+    Sinon renvoie None.
+    """
+    m = CODEFENCE_JSON_RE.search(text)
+    if m:
+        return m.group(1).strip()
+    m = CODEFENCE_ANY_RE.search(text)
+    if m:
+        return m.group(1).strip()
+    return None
 
 
 class Vectoriel_research:
@@ -110,15 +131,20 @@ class Vectoriel_research:
             enable_limit=True,   # permet: "donne-moi 3 docs"
             verbose=True,
         )
+        self.retriever = extract_json_codeblock(self.retriever)
 
         print("[INFO] Retriever LLM initialisé.\n\n self.retriever:", self.retriever)
 
         return self.retriever
 
 
+
     def get_retriever(self):
         return self.retriever
     
+
+
+        
 
 
 
