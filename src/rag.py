@@ -1,5 +1,6 @@
 import embedding as emb
-import modele_LLM as mod
+import modele_LLM_hugface as mod_hug
+import modele_LLM_ollama as mode_oll
 import utilisation_GPU as test_GPU
 import prompt as prompt
 import modele_Embeddings as modele_Emb
@@ -36,9 +37,10 @@ class RAG:
         self.embedding_data = None
 
         # Initialisation des modèle de langage
-        self.llm = mod.QwenLLM(device=device, quantized=False)
-        self.llm_retriever = mod.Mistral7BLLM(device=device, quantized=False)
-
+        # self.llm = mod_hug.QwenLLM(device=device, quantized=False)
+        self.llm = mode_oll.model_Ollama(0)
+        # self.llm_retriever = mod_hug.Mistral7BLLM(device=device, quantized=False)
+        self.llm_retriever = mode_oll.model_Ollama(0)
         
         # Modèle de prompt simple
         self.prompt = prompt.Prompt(1)
@@ -96,11 +98,19 @@ class RAG:
                 
                 result = self.rag.invoke({"query": question})
 
-                print("📘 Question :", question)
-                print("💬 Réponse :", result["result"])
-                print("Sources utilisées :")
+                print("📘 Question :", question,"\n\n")
+                print("💬 Réponse :", result["result"],"\n\n")
+
+                # Affichage des sources (uniques)
+                print("📚 Sources utilisées :")
+                seen_sources = set()
                 for doc in result["source_documents"]:
-                    print(f"Source: {doc.metadata.get('source', 'inconnu')} — extrait: {doc.page_content[:100]}")
+                    source = doc.metadata.get("source", "inconnu")
+                    if source not in seen_sources:
+                        seen_sources.add(source)
+                        excerpt = doc.page_content[:100].replace("\n", " ")
+                        print(f"Source: {source} — extrait: {excerpt}")
+                print("\n")
 
 
                     

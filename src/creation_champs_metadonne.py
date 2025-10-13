@@ -9,7 +9,7 @@ from typing import Dict, Iterable, List
 from langchain.chains.query_constructor.base import AttributeInfo
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
-import modele_LLM as mod
+import src.modele_LLM_hugface as mod
 
 @dataclass
 class MetadataSample:

@@ -131,9 +131,9 @@ class Vectoriel_research:
             enable_limit=True,   # permet: "donne-moi 3 docs"
             verbose=True,
         )
-        self.retriever = extract_json_codeblock(self.retriever)
+        # self.retriever = extract_json_codeblock(self.retriever)
 
-        print("[INFO] Retriever LLM initialisé.\n\n self.retriever:", self.retriever)
+        # print("[INFO] Retriever LLM initialisé.\n\n self.retriever:", self.retriever)
 
         return self.retriever
 
