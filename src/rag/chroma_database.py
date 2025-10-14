@@ -8,10 +8,22 @@ if src_path not in sys.path:
 
 
 from langchain_community.vectorstores import Chroma
+from langchain.schema import Document  # ou langchain.docstore.document import Document
 
 from src.gestionnaire_fichier import chemindossier
 CHEMIN_FICHIER = chemindossier()
+CHEMIN_FICHIER_RAG = f"{chemindossier()}/data_rag"
 
+import src.rag.embedding as emb
+
+
+def dicts_to_documents(chunks: list[dict]) -> list[Document]:
+    documents = []
+    for chunk in chunks:
+        text = chunk.get("text", "")
+        metadata = chunk.get("metadata", {}) or {}
+        documents.append(Document(page_content=text, metadata=metadata))
+    return documents
 
 
 class ChromaDB:
@@ -42,14 +54,51 @@ class ChromaDB:
             self.vectordb = None
         return self.vectordb
 
-    def delete(self):
+
+    def delete_files(self, nom_fichier: str):
+        """
+        Supprime tous les chunks dont la métadonnée `source`
+        correspond au nom de fichier fourni.
+        """
+        if not nom_fichier:
+            print("[WARN] Aucun nom de fichier fourni, suppression annulée.")
+            return
+
+        if not self.vectordb:
+            self.vectordb = self.load()
+
+        if not self.vectordb:
+            print("[ERROR] Impossible de charger l'index, suppression annulée.")
+            return
+
+        try:
+            deleted_ids = self.vectordb.delete(where={"source": nom_fichier})
+            nb_deleted = len(deleted_ids) if deleted_ids else 0
+            if nb_deleted != 0:
+                print(f"[INFO] {nb_deleted} chunk(s) supprimé(s) pour source='{nom_fichier}'.")
+                print(f"[INFO] Suppression doublons database!")
+                return 1
+            else:
+                return 0
+
+        except Exception as e:
+            print(f"[ERROR] Erreur lors de la suppression des chunks: {e}")
+
+
+
+    def delete_all(self):
+        """
+        Supprime complètement la base Chroma persistée.
+        """
         import shutil
         try:
             shutil.rmtree(self.directory)
             self.vectordb = None
-            print(f"[INFO] Index supprimé de {self.directory}")
+            print(f"[INFO] Base Chroma supprimée: {self.directory}")
+        except FileNotFoundError:
+            print(f"[INFO] Aucun index à supprimer dans {self.directory}")
         except Exception as e:
-            print(f"[ERROR] Erreur lors de la suppression de l'index: {e}")
+            print(f"[ERROR] Erreur lors de la suppression de la base: {e}")
 
 
     def get_chunks_db(self):
@@ -63,10 +112,20 @@ class ChromaDB:
          # Transformer la liste d'objets Document en liste de dict {text, metadata}
         chunks = [{'text': doc.page_content, 'metadata': doc.metadata} for doc in results]
 
-        print("CHUNKSSSSS :\n",chunks)
+        # print("Chunks :\n",chunks)
     
         return chunks
     
+
+
+    def mise_a_jour_metadata(self):
+        all_chunks = self.get_chunks_db()
+        all_chunks = emb.augmentation_metadonne(all_chunks)
+        doc_all_chunks = dicts_to_documents(all_chunks)
+        self.overwrite_db(doc_all_chunks)
+        print("[INFO] Mise à jour des métadonné de ChromaDB")
+
+
 
     def all_metadata(self) -> list:
         """
@@ -139,8 +198,8 @@ class ChromaDB:
 
 
 
-    def compare_existe(self, directory):
-        import os
-        return os.path.exists(self.directory) and os.listdir(self.directory)
+    def overwrite_db(self, all_chunks):
+        self.delete_all()
+        self.save(all_chunks)
     
 

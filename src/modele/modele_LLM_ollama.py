@@ -8,7 +8,7 @@ from langchain_ollama.llms import OllamaLLM
 class model_Ollama():
 
     def __init__(self,index_model):
-        model_ollama = ["llama3.2:3b","llama3.2:1b"]
+        model_ollama = ["llama3.2:3b","llama3.2:1b","mistral:7b-instruct","deepseek-r1:8b"]
         # Chargement du modèle Ollama via LangChain
         self.ollama_model = OllamaLLM(model=model_ollama[index_model], base_url=os.getenv("OLLAMA_HOST"))
         pass
@@ -23,18 +23,3 @@ class model_Ollama():
     def get_pipeline(self):
         return self.ollama_model
 
-
-if __name__ == "__main__":
-
-    import test.utilisation_GPU as test_GPU
-    device = test_GPU.test_utilisation_GPU()
-
-    llm = model_Ollama(0)
-
-    print("\n Tapez 'exit' pour quitter.")
-    while True:
-        prompt = input("\nVous: ")
-        if prompt.lower() == "exit":
-            break
-        response = llm.generate(prompt)
-        print("\nLLM:", response)

@@ -14,3 +14,8 @@ class Model_embeddings:
     
     def get_embedder(self):
         return self.embedder
+    
+
+
+
+    

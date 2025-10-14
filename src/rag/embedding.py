@@ -41,6 +41,50 @@ def chunk_text(text: str, chunk_size: int = 800 , chunk_overlap: int = 120 ) -> 
     return chunks
 
 
+def augmentation_metadonne(chunks: List[Dict]) -> List[Dict]:
+    """
+    Ajoute des métadonnées supplémentaires à chaque chunk dans la liste.
+    Par exemple : date de traitement, nom et extension du fichier.
+
+    Args:
+        chunks (List[Dict]): Liste de chunks avec un champ 'metadata' dict.
+        path_file (str): Chemin complet du fichier source pour extraire nom et extension.
+
+    Returns:
+        List[Dict]: Liste mise à jour avec métadonnées augmentées.
+    """
+    
+    metadonne_augmentee = []
+    timestamp = datetime.utcnow().isoformat() + "Z"  # horodatage ISO UTC
+
+    # print("CHUNKS",chunks)
+
+
+    for chunk in chunks:
+        # Récupérer les métadonnées existantes ou initialiser un dict vide
+        metadata = chunk['metadata']
+        print("\nChunk :",metadata)
+        nom_fichier = metadata["source"]
+        extension_fichier = os.path.splitext(nom_fichier)[1].replace('.', '').upper()  # extension sans point, en MAJ
+        nom_fichier = os.path.basename(nom_fichier)
+
+        # Ajouter ou mettre à jour les métadonnées spécifiques
+        metadata.update({
+            'date_ajout': timestamp,
+            # 'nom_fichier': nom_fichier,
+            'extension_fichier': extension_fichier,
+            'source': nom_fichier
+        })
+
+        # Mettre à jour le chunk avec ces métadonnées augmentées
+        chunk['metadata'] = metadata
+
+        metadonne_augmentee.append(chunk)
+
+    return metadonne_augmentee
+
+
+
 
 
 # Embedding avec HuggingFace 
@@ -70,48 +114,6 @@ class Embedding_datasource:
         
         return all_chunks
     
-
-
-    def augmentation_metadonne(self, chunks: List[Dict]) -> List[Dict]:
-        """
-        Ajoute des métadonnées supplémentaires à chaque chunk dans la liste.
-        Par exemple : date de traitement, nom et extension du fichier.
-
-        Args:
-            chunks (List[Dict]): Liste de chunks avec un champ 'metadata' dict.
-            path_file (str): Chemin complet du fichier source pour extraire nom et extension.
-
-        Returns:
-            List[Dict]: Liste mise à jour avec métadonnées augmentées.
-        """
-        
-        metadonne_augmentee = []
-        timestamp = datetime.utcnow().isoformat() + "Z"  # horodatage ISO UTC
-
-        # print("CHUNKS",chunks)
-
-
-        for chunk in chunks:
-            # Récupérer les métadonnées existantes ou initialiser un dict vide
-            metadata = chunk['metadata']
-            print("\nChunk :",metadata)
-            nom_fichier = metadata["source"]
-            extension_fichier = os.path.splitext(nom_fichier)[1].replace('.', '').upper()  # extension sans point, en MAJ
-            nom_fichier = os.path.basename(nom_fichier)
-
-            # Ajouter ou mettre à jour les métadonnées spécifiques
-            metadata.update({
-                'Date_Ajout': timestamp,
-                'Nom_fichier': nom_fichier,
-                'Extension_fichier': extension_fichier
-            })
-
-            # Mettre à jour le chunk avec ces métadonnées augmentées
-            chunk['metadata'] = metadata
-
-            metadonne_augmentee.append(chunk)
-
-        return metadonne_augmentee
 
 
 

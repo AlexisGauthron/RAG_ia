@@ -9,12 +9,10 @@ if src_path not in sys.path:
 
 from src.modele import modele_LLM_hugface as mod_hug
 
-import src.modele.modele_LLM_hugface as mod_hug
 import src.modele.modele_LLM_ollama as mode_oll
 import src.modele.modele_Embeddings as modele_Emb
 
 import src.rag.embedding as emb
-import test.utilisation_GPU as test_GPU
 import src.rag.prompt as prompt
 import src.rag.vectoriel_research as vec
 import test.utilisation_GPU as test_GPU
@@ -40,7 +38,7 @@ CHEMIN_FICHIER = chemindossier()
 
 
 class RAG:
-    def __init__(self, device, embedder = modele_Emb.modele_embedding[0], llm = mode_oll.model_Ollama(0), llm_retriever = mode_oll.model_Ollama(0), prompt_model = prompt.Prompt(1), mode: str = "default"):
+    def __init__(self, device, embedder, llm = mode_oll.model_Ollama(0), llm_retriever = mode_oll.model_Ollama(0), prompt_model = prompt.Prompt(1), mode: str = "default"):
 
         self.device = device  
         self.embedder = embedder  
@@ -54,6 +52,9 @@ class RAG:
         self.retriever = None
         self.rag = None
         
+
+    def switch_mode(self,mode):
+        self.mode = mode
 
 
     # Création des embeddings et de la base vectorielle
@@ -123,8 +124,28 @@ class RAG:
             return None
 
 
+    def chunks_selectionne_with_score(self,query):
+        
+        docs_scores = self.retriever.vectorstore.similarity_search_with_relevance_scores(query, k=5)
+        for i, (doc, score) in enumerate(docs_scores, 1):
+            print(f"Chunk {i} – score: {score:.3f}")
+            print(f"Source: {doc.metadata.get("nom_fichier")}.{doc.metadata.get("extension")}")
+            print(f"Page: {doc.metadata.get('page')}")
+            print(f"Chunk:\n",doc.page_content, "\n\n")
+
+
+    def chunks_selectionne_unique(self,result):
+        # Affichage des sources (uniques)
+            for doc in result["source_documents"]:
+                print(f"Source: {doc.metadata.get("nom_fichier")}.{doc.metadata.get("extension")}")
+                print(f"Page: {doc.metadata.get('page')}")
+                print(f"Chunk:\n",doc.page_content, "\n\n")     
+                    
+
+
+
     # 5️⃣ Boucle d'interaction
-    def chat_with_rag_console(self):
+    def chat_with_rag_console(self,selection_chunk = "default"):
         print("Posez vos questions (tapez 'exit' pour quitter) :")
 
         while True:
@@ -142,15 +163,13 @@ class RAG:
                 print("📘 Question :", question,"\n\n")
                 print("💬 Réponse :", result["result"],"\n\n")
 
+            
                 # Affichage des sources (uniques)
                 print("📚 Sources utilisées :")
-                seen_sources = set()
-                for doc in result["source_documents"]:
-                    source = doc.metadata.get("source", "inconnu")
-                    if source not in seen_sources:
-                        seen_sources.add(source)
-                        excerpt = doc.page_content[:100].replace("\n", " ")
-                        print(f"Source: {source} — extrait: {excerpt}")
+                if selection_chunk == "score":
+                    self.chunks_selectionne_with_score(question)
+                else:
+                    self.chunks_selectionne_unique(result)
                 print("\n")
 
 
@@ -160,17 +179,5 @@ class RAG:
             # except Exception as e:
             #     print(f"[ERR] {type(e).__name__}: {e}")
 
-
-
-if __name__ == "__main__":
-    device = test_GPU.test_utilisation_GPU()
-    rag = RAG(device)
-    embed_model = modele_Emb.Model_embeddings(device,0).get_embedder()
-    chro_db = chdt.ChromaDB(embed_model)
-    embedding_data = chro_db.load()
-    print(embedding_data)
-    rag.build_data_rag(embedding_data)
-    rag.build_pipeline_rag()
-    rag.chat_with_rag_console()
 
 

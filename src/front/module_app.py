@@ -1,7 +1,9 @@
+from pathlib import Path
+
 
 # Fichier inclue dans module_app.py
 import test.utilisation_GPU as test_GPU
-import src.rag.load_fichier as gf
+import src.rag.load_fichier as lf
 import src.rag.embedding as emb
 import src.rag.chroma_database as chdt
 import src.rag.rag as rg
@@ -11,11 +13,19 @@ import src.modele.modele_LLM_ollama as mode_oll
 
 import src.rag.prompt as prompt
 
+import src.gestionnaire_fichier as gf
+
+from src.gestionnaire_fichier import chemindossier
+CHEMIN_FICHIER = chemindossier()
+CHEMIN_FICHIER_RAG = f"{chemindossier()}/data_rag"
+
+
 class module_app:
-    def __init__(self, embed_model, prompt_model: int, directory: str = gf.chemindossier()):
+    def __init__(self, embed_model, prompt_model: int, directory: str = CHEMIN_FICHIER_RAG):
         self.device = test_GPU.test_utilisation_GPU()
         self.embed_model = modele_Emb.Model_embeddings(self.device,embed_model).get_embedder()
         self.prompt_model = prompt_model
+        self.directory = directory
 
          # Initialisation des composants RAG
 
@@ -26,16 +36,32 @@ class module_app:
 
 
     # Fonction pour créer les embeddings et la base vectorielle
-    def telechargement(self,data_folder: str):
-        
-        docs = gf.load_text_files(data_folder)
+    def telechargement(self,data_folder: str = f"{CHEMIN_FICHIER}/Importer"):
+        data_folder_path = Path(data_folder)
+        data_folder_path.mkdir(parents=True, exist_ok=True)
+
+        for file in gf.find_all_path_files(data_folder):
+            self.chro_db.delete_files(file)
+
+        docs = lf.load_text_files(data_folder)
         all_chunks = self.embedder.build_all_chunks(docs)
         # Augmentation des métas données
-        all_chunks = self.embedder.augmentation_metadonne(all_chunks)
+        all_chunks = emb.augmentation_metadonne(all_chunks)
         self.chro_db.save(all_chunks)
-
+        gf.switch_directory(data_folder,self.directory)
         print(f"[INFO] Base vectorielle créée et sauvegardée dans {self.chro_db.directory}")
         
+
+    def delete_files(self,nom_fichier):
+        delete = self.chro_db.delete_files(nom_fichier)
+        if delete == 1:
+            print("Suprresion fichier !!!\n")
+            chemin_complet = Path(f"{CHEMIN_FICHIER_RAG}/{nom_fichier}")
+            if chemin_complet.is_file():
+                chemin_complet.unlink()
+
+
+
 
     def lancement_RAG(self,llm_model: str, llm_retriever_model: str):
         self.rag = rg.RAG(self.device,self.embed_model, llm_model, llm_retriever_model)
@@ -49,8 +75,7 @@ class module_app:
         response = self.rag.chat_rag(query)
         return response
         
-    def print_all_chuncks(self):
-        self.chro_db.write_all_chunks()
+    
 
 
 

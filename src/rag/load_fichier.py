@@ -48,20 +48,12 @@ EXTENSION_LOADER_MAP = {
     ".csv": CSVLoader,
 }
 
+import src.gestionnaire_fichier as gf
 from src.gestionnaire_fichier import chemindossier
 CHEMIN_FICHIER = chemindossier()
 
 
-# Récupère tous les fichiers (récursivement)
-def find_all_path_files(data_dir):
-    return glob.glob(os.path.join(data_dir, "**", "*"), recursive=True)
 
-
-def find_all_files(data_dir):
-    files = []
-    for path_file in find_all_path_files(data_dir):
-        files.append(os.path.basename(path_file))
-    return files
 
 
 
@@ -74,7 +66,7 @@ def load_text_files(data_dir: str = f"{CHEMIN_FICHIER}/data_rag") -> List[Tuple[
     """
     
     # Récupère tous les fichiers (récursivement)
-    all_files = find_all_path_files(data_dir)
+    all_files = gf.find_all_path_files(data_dir)
 
     # Filtre selon l'extension
     paths = []

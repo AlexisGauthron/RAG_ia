@@ -15,20 +15,19 @@ import glob
 
 
 
-import src.rag.load_fichier as gf
+import src.rag.load_fichier as lf
+import src.gestionnaire_fichier as gf
 from src.gestionnaire_fichier import chemindossier
 CHEMIN_FICHIER = chemindossier()
 
 import src.rag.embedding as emb
-all_extension = gf.LISTE_FICHIER_ACCEPTE
-extension = gf.LISTE_ACTUEL
+all_extension = lf.LISTE_FICHIER_ACCEPTE
+extension = lf.LISTE_ACTUEL
 
 
 CHEMIN_DOSSIER_RAG = f"{CHEMIN_FICHIER}/data_rag"
 import src.front.module_app as mapp
 
-
-import streamlit as st
 import src.modele.modele_LLM_ollama as mode_oll
 
 ### Debut de l'application Streamlit ###
@@ -46,9 +45,9 @@ class App():
     def take_all_files(self):
         self.data_rag = gf.find_all_files(CHEMIN_DOSSIER_RAG)
 
-    def upload_fichier(self):
+    def upload_fichier(self,name_key,):
 
-        uploaded_files = st.file_uploader("Ajoutez votre fichier", type=extension, accept_multiple_files=True)
+        uploaded_files = st.file_uploader("Ajoutez votre fichier", type=extension, accept_multiple_files=True,key=name_key)
 
         if uploaded_files:
 
@@ -60,7 +59,7 @@ class App():
                     nom_subdir = "Importer"
                     nom_entier = f"{CHEMIN_FICHIER}/{nom_subdir}"
                     # Vous pouvez modifier cela selon vos besoins
-                    saved_paths = [gf.save_uploaded_file(f, subdir=nom_subdir, dossier=CHEMIN_FICHIER) for f in uploaded_files]
+                    saved_paths = [lf.save_uploaded_file(f, subdir=nom_subdir, dossier=CHEMIN_FICHIER) for f in uploaded_files]
                     st.success(f"{len(saved_paths)} fichier(s) enregistré(s) dans: {CHEMIN_FICHIER}/{nom_subdir}")
                     for p in saved_paths:
                         st.write(str(p))
@@ -105,7 +104,7 @@ class App():
             st.header("Documents")  # Titre dans la sidebar
             
 
-            self.upload_fichier()
+            self.upload_fichier("A")
 
 
             # Injecter le CSS
@@ -152,7 +151,9 @@ class App():
 
                     with cols[2]:
                         if st.button("X", key=f"del_{i}"):
-                            st.sidebar.write(f"Suppression simulée : {fichier}")
+                            self.app.delete_files(fichier)
+                            fichier = gf.find_all_files(CHEMIN_DOSSIER_RAG)
+                            st.rerun()
 
 
     def template(self):
