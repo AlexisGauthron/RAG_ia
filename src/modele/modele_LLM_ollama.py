@@ -26,7 +26,7 @@ class model_Ollama():
 
 if __name__ == "__main__":
 
-    import utilisation_GPU as test_GPU
+    import test.utilisation_GPU as test_GPU
     device = test_GPU.test_utilisation_GPU()
 
     llm = model_Ollama(0)
