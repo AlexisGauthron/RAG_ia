@@ -1,57 +1,50 @@
+import modele.modele_LLM_hugface as mod_hug
+import modele.modele_LLM_ollama as mode_oll
+import modele.modele_Embeddings as modele_Emb
+
 import embedding as emb
-import modele_LLM_hugface as mod_hug
-import modele_LLM_ollama as mode_oll
 import utilisation_GPU as test_GPU
 import prompt as prompt
-import modele_Embeddings as modele_Emb
 import vectoriel_research as vec
+import chroma_database as cdbt
 
-
-from path_file import chemindossier
+from load_fichier import chemindossier
 CHEMIN_FICHIER = chemindossier()
 
 
-from typing import Dict
+# from typing import Dict
 
-from transformers import pipeline
-try:
-    from transformers import BitsAndBytesConfig
-except ImportError:  # pragma: no cover - optional dependency
-    BitsAndBytesConfig = None
-try:  # pragma: no cover - optional dependency
-    import torch
-except ImportError:  # pragma: no cover
-    torch = None
-# from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+# from transformers import pipeline
+# try:
+#     from transformers import BitsAndBytesConfig
+# except ImportError:  # pragma: no cover - optional dependency
+#     BitsAndBytesConfig = None
+# try:  # pragma: no cover - optional dependency
+#     import torch
+# except ImportError:  # pragma: no cover
+#     torch = None
+# # from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+
 
 
 class RAG:
-    def __init__(self):
-        # Test et utilisation du GPU si disponible
-        device = test_GPU.test_utilisation_GPU()
+    def __init__(self, device, embedder = modele_Emb.modele_embedding[0], llm = mode_oll.model_Ollama(0), llm_retriever = mode_oll.model_Ollama(0), prompt_model = prompt.Prompt(1)):
 
-        # Initialisation de la création des embeddings et de la base vectorielle
-        self.embedder = modele_Emb.modele_embedding[0]  # Choisir le modèle d'embedding (0 ou 1)
-        print(f"[INFO] Modèle d'embedding sélectionné : {self.embedder['model']}")
-        self.embed_data = emb.Embedding_datasource(device,self.embedder["model"])
+        self.device = device  
+        self.embedder = embedder  
+        self.llm = llm
+        self.llm_retriever = llm_retriever
+        self.prompt = prompt_model
+
         self.embedding_data = None
-
-        # Initialisation des modèle de langage
-        # self.llm = mod_hug.QwenLLM(device=device, quantized=False)
-        self.llm = mode_oll.model_Ollama(0)
-        # self.llm_retriever = mod_hug.Mistral7BLLM(device=device, quantized=False)
-        self.llm_retriever = mode_oll.model_Ollama(0)
-        
-        # Modèle de prompt simple
-        self.prompt = prompt.Prompt(1)
         self.vestor_research = None
         self.retriever = None
         self.rag = None
 
 
     # Création des embeddings et de la base vectorielle
-    def build_data_rag(self):
-        self.embedding_data = self.embed_data.run(chunk_max_size=800, chunk_overlap=120)
+    def build_data_rag(self,embedding_data):
+        self.embedding_data = embedding_data
         
 
     def build_retriever(self):
@@ -62,6 +55,7 @@ class RAG:
 
         # self.vestor_research.search(top_k=k)
         self.vestor_research.search_llm(self.llm_retriever.get_pipeline())
+
         self.retriever = self.vestor_research.get_retriever()
 
         # self.retriever = self.embedding_data.as_retriever(search_kwargs={"k": k})
@@ -86,8 +80,16 @@ class RAG:
         )
 
 
+    def chat_rag(self, query: str):
+        if not self.rag:
+            print("[WARN] Le pipeline RAG n'est pas construit.")
+            return None
+        return self.rag.invoke({"query": query})
+
+
+
     # 5️⃣ Boucle d'interaction
-    def chat_with_rag(self):
+    def chat_with_rag_console(self):
         print("Posez vos questions (tapez 'exit' pour quitter) :")
 
         while True:
@@ -122,9 +124,18 @@ class RAG:
 
 
 
+
+import utilisation_GPU as test_GPU
+import chroma_database as chdt
+
 if __name__ == "__main__":
-    rag = RAG()
-    rag.build_data_rag()
+    device = test_GPU.test_utilisation_GPU()
+    rag = RAG(device)
+    embed_model = modele_Emb.Model_embeddings(device,0).get_embedder()
+    chro_db = chdt.ChromaDB(embed_model)
+    embedding_data = chro_db.load()
+    print(embedding_data)
+    rag.build_data_rag(embedding_data)
     rag.build_pipeline_rag()
-    rag.chat_with_rag()
+    rag.chat_with_rag_console()
 

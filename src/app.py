@@ -7,23 +7,32 @@ import glob
 
 
 
-import gestion_fichier as gf
-from gestion_fichier import chemindossier
+import load_fichier as gf
+from load_fichier import chemindossier
 CHEMIN_FICHIER = chemindossier()
 
 import embedding as emb
-all_extension = emb.LISTE_FICHIER_ACCEPTE
-extension = emb.LISTE_ACTUEL
+all_extension = gf.LISTE_FICHIER_ACCEPTE
+extension = gf.LISTE_ACTUEL
 
+
+import module_app as mapp
+
+app = mapp.module_app(embed_model=0, prompt_model=1, directory=CHEMIN_FICHIER)
 
 CHEMIN_DOSSIER_RAG = f"{CHEMIN_FICHIER}/data_rag"
+
+
+
+### Debut de l'application Streamlit ###
+
 
 st.title('Bonjour, bienvenue sur mon RAG!')
 
 
 def upload_fichier():
 
-    uploaded_files = st.file_uploader("Ajoutez votre fichier", type=extension)
+    uploaded_files = st.file_uploader("Ajoutez votre fichier", type=extension, accept_multiple_files=True)
 
     if uploaded_files:
 
@@ -32,17 +41,25 @@ def upload_fichier():
             submit_button = st.form_submit_button("Confirmer le chargement")
 
             if submit_button:
-                for file in uploaded_files:
-                    # Vous pouvez traiter le contenu ici
-                    content = file.read()
-                    st.write(f"Chargement confirmé pour : {file.name}")
+                nom_subdir = "Importer"
+                nom_entier = f"{CHEMIN_FICHIER}/{nom_subdir}"
+                  # Vous pouvez modifier cela selon vos besoins
+                saved_paths = [gf.save_uploaded_file(f, subdir=nom_subdir, dossier=CHEMIN_FICHIER) for f in uploaded_files]
+                st.success(f"{len(saved_paths)} fichier(s) enregistré(s) dans: {CHEMIN_FICHIER}/{nom_subdir}")
+                for p in saved_paths:
+                    st.write(str(p))
+                # (Optionnel) garder les chemins pour usage ultérieur
+                st.session_state["uploaded_paths"] = [str(p) for p in saved_paths]
+                app.telechargement(nom_entier)
         
         
         
-
-name = st.text_input('Poser vos questions !')
-if name:
-    st.write(f"Bonjour, {name} !")
+def discuter():
+    query = st.text_input('Poser vos questions !')
+    if query:
+        app.lancement_RAG(llm_model=0, llm_retriever_model=0)
+        response = app.question_reponse_rag(query)
+        st.write(f"{response["result"]}")
 
 
 def sidebar(Liste_document_RAG):
@@ -115,7 +132,7 @@ def sidebar(Liste_document_RAG):
 all_files_rag = gf.find_all_files(CHEMIN_DOSSIER_RAG)
 
 
-
+discuter()
 
 sidebar(all_files_rag)
 

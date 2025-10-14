@@ -1,6 +1,6 @@
 from langchain_community.vectorstores import Chroma
 
-from path_file import chemindossier
+from load_fichier import chemindossier
 CHEMIN_FICHIER = chemindossier()
 
 
@@ -8,19 +8,9 @@ CHEMIN_FICHIER = chemindossier()
 class ChromaDB:
     def __init__(self, embedder, directory=f"{CHEMIN_FICHIER}/chroma_db"):
         self.directory = directory
+
         self.embedder = embedder
         self.vectordb = None
-
-    def query(self, query_text, top_k=5, metadata_filter=None):
-        try:
-            results = self.vectordb.similarity_search(
-                query_text, k=top_k, filter=metadata_filter
-            )
-            return results
-        except Exception as e:
-            print(f"[ERROR] Erreur lors de la requête: {e}")
-            return []
-    
 
     def save(self,all_chunks):
 
@@ -41,7 +31,7 @@ class ChromaDB:
         except Exception as e:
             print(f"[ERROR] Erreur lors du chargement de l'index: {e}")
             self.vectordb = None
-
+        return self.vectordb
 
     def delete(self):
         import shutil
@@ -52,5 +42,9 @@ class ChromaDB:
         except Exception as e:
             print(f"[ERROR] Erreur lors de la suppression de l'index: {e}")
 
+
+    def compare_existe(self):
+        import os
+        return os.path.exists(self.directory) and os.listdir(self.directory)
     
 

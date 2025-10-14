@@ -1,25 +1,18 @@
+# Importations standard
 import os
-import glob
 import re
 import json
 from typing import List, Tuple
-import numpy as np
-
-import gestion_fichier as gf
-
-
 from langchain_huggingface import HuggingFaceEmbeddings
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 
-
-from gestion_fichier import chemindossier
+# Importations internes
+import load_fichier as gf
+from load_fichier import chemindossier
 CHEMIN_FICHIER = chemindossier()
 
 
-
-
-
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 def chunk_text(text: str, chunk_size: int = 800 , chunk_overlap: int = 120 ) -> List[str]:
     """
@@ -38,52 +31,42 @@ def chunk_text(text: str, chunk_size: int = 800 , chunk_overlap: int = 120 ) -> 
 
 
 
-# -----------------------------
-# 2) Index FAISS (création / chargement)
-# -----------------------------
+# Embedding avec HuggingFace 
 class Embedding_datasource:
-    def __init__(self, device, embed_model: str = "sentence-transformers/all-MiniLM-L6-v2"):
-        self.embedder = HuggingFaceEmbeddings(
-            model_name=embed_model,
-            model_kwargs={"device": device}
-        ) 
-        self.vectordb = None
+    def __init__(self, embed_model):
+        self.embedder = embed_model
         self.metadata = set()
 
 
-    def build(self, docs: List[Tuple[str, str]]):
+    def build_chunk(self, doc: Tuple[str, str], chunk_size: int = 800 , chunk_overlap: int = 120):
+        # Récupère le texte et les métadonnées
+        chunks = chunk_text(doc, chunk_size, chunk_overlap)
+        self.save_ex_chunks(chunks)
+
+        return chunks
+
+
+    def build_all_chunks(self, docs: List[Tuple[str, str]]):
         # Découpe chaque document en chunks
         all_chunks = []
         for doc in docs:
-            # Récupère le texte et les métadonnées
-            chunks = chunk_text(doc)
-            self.save_ex_chunks(chunks)  # Sauvegarde les chunks extraits pour référence
-
-
+            chunks = self.build_chunk(doc)
             all_chunks.extend(chunks)
-            # self.list_metadata(doc)
+            
         print(f"[INFO] {len(all_chunks)} chunks créés à partir de {len(docs)} documents.")
-
+        
         return all_chunks
 
 
-    def save(self,all_chunks):
-        # Sauvegarde l'index avec Chroma
-        import chroma_database as chdt
-        chro_db = chdt.ChromaDB(self.embedder)
-        chro_db.save(all_chunks)
-        self.vectordb = chro_db.vectordb
 
 
-    def run(self,chunk_max_size : int = 800, chunk_overlap : int = 120):
-        docs = gf.load_text_files()
-        self.build(docs, chunk_max_size, chunk_overlap)
-        return self.vectordb
+
+
+
+
+     # BONUSSSSSS : Sauvegarde d'exemples de chunks
     
-    def telechargement(self):
-        docs = gf.load_text_files()
-        all_chunks = self.build(docs)
-        self.save(all_chunks)
+
 
 
     def save_ex_chunks(self, chunks):
