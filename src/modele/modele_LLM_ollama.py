@@ -11,6 +11,7 @@ class model_Ollama():
         model_ollama = ["llama3.2:3b","llama3.2:1b","mistral:7b-instruct","deepseek-r1:8b"]
         # Chargement du modèle Ollama via LangChain
         self.ollama_model = OllamaLLM(model=model_ollama[index_model], base_url=os.getenv("OLLAMA_HOST"))
+        print("[INFO] Chargement model Ollama")
         pass
     
     def generate(self,query):

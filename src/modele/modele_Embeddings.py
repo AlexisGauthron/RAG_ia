@@ -11,6 +11,7 @@ class Model_embeddings:
             model_name=self.model,
             model_kwargs={"device": device}
         ) 
+        print("[INFO] Chargement Model_embeddings\n")
     
     def get_embedder(self):
         return self.embedder

@@ -20,7 +20,7 @@ import os
 from typing import List, Dict
 
 # Importations internes
-import src.rag.load_fichier as gf
+import src.rag.load_fichier as lf
 from src.gestionnaire_fichier import chemindossier
 CHEMIN_FICHIER = chemindossier()
 
@@ -63,7 +63,7 @@ def augmentation_metadonne(chunks: List[Dict]) -> List[Dict]:
     for chunk in chunks:
         # Récupérer les métadonnées existantes ou initialiser un dict vide
         metadata = chunk['metadata']
-        print("\nChunk :",metadata)
+    
         nom_fichier = metadata["source"]
         extension_fichier = os.path.splitext(nom_fichier)[1].replace('.', '').upper()  # extension sans point, en MAJ
         nom_fichier = os.path.basename(nom_fichier)
@@ -89,10 +89,8 @@ def augmentation_metadonne(chunks: List[Dict]) -> List[Dict]:
 
 # Embedding avec HuggingFace 
 class Embedding_datasource:
-    def __init__(self, embed_model):
-        self.embedder = embed_model
-        self.metadata = set()
-
+    def __init__(self):
+        pass
 
 
     def build_chunk(self, doc: Tuple[str, str], chunk_size: int = 800 , chunk_overlap: int = 120):
@@ -114,7 +112,6 @@ class Embedding_datasource:
         
         return all_chunks
     
-
 
 
 

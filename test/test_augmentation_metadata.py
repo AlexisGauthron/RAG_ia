@@ -22,10 +22,13 @@ def test_augmentation():
     # print(all_chunk)
     return emb.augmentation_metadonne(all_chunk)
 
+
 test_aug = test_augmentation()
 print(test_aug)
 
-def liste_augmentation():
+
+
+def liste_metadata():
     return databa.all_metadata()
 
-liste_augmentation()
+liste_metadata()

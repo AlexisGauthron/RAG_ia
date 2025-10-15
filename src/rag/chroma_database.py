@@ -23,7 +23,18 @@ def dicts_to_documents(chunks: list[dict]) -> list[Document]:
         text = chunk.get("text", "")
         metadata = chunk.get("metadata", {}) or {}
         documents.append(Document(page_content=text, metadata=metadata))
+    print("[INFO] Changement dicts to document")
     return documents
+
+def is_list_of_dicts(x, *, allow_empty=True) -> bool:
+    if not isinstance(x, list):
+        return False
+    if not x:       # liste vide
+        return allow_empty
+    return all(isinstance(item, dict) for item in x)
+
+
+
 
 
 class ChromaDB:
@@ -34,6 +45,11 @@ class ChromaDB:
         self.vectordb = None
 
     def save(self,all_chunks):
+        
+        # Test si all chunks est une liste de dictionnaire
+        if is_list_of_dicts(all_chunks):
+            all_chunks = dicts_to_documents(all_chunks)
+
 
         # Indexation avec Chroma
         self.vectordb = Chroma.from_documents(all_chunks, self.embedder, persist_directory=self.directory)
@@ -60,30 +76,57 @@ class ChromaDB:
         Supprime tous les chunks dont la métadonnée `source`
         correspond au nom de fichier fourni.
         """
+        print("[INFO] Section Deletes files doubles !\n")
+
         if not nom_fichier:
-            print("[WARN] Aucun nom de fichier fourni, suppression annulée.")
+            print("[WARN] Aucun nom de fichier fourni, suppression annulée.\n")
             return
 
         if not self.vectordb:
             self.vectordb = self.load()
 
         if not self.vectordb:
-            print("[ERROR] Impossible de charger l'index, suppression annulée.")
+            print("[ERROR] Impossible de charger l'index, suppression annulée.\n")
             return
 
         try:
+            self.affichage_match(nom_fichier)
             deleted_ids = self.vectordb.delete(where={"source": nom_fichier})
+
+            print("Delete_ids",deleted_ids)
             nb_deleted = len(deleted_ids) if deleted_ids else 0
             if nb_deleted != 0:
-                print(f"[INFO] {nb_deleted} chunk(s) supprimé(s) pour source='{nom_fichier}'.")
-                print(f"[INFO] Suppression doublons database!")
+                print(f"[INFO] {nb_deleted} chunk(s) supprimé(s) pour source='{nom_fichier}'.\n")
+                print(f"[INFO] Suppression doublons database!\n")
                 return 1
             else:
+                print(f"[INFO] Aucune suppression nécéssaire !\n")
                 return 0
+                
 
         except Exception as e:
-            print(f"[ERROR] Erreur lors de la suppression des chunks: {e}")
+            print(f"[ERROR] Erreur lors de la suppression des chunks:\n {e}")
 
+
+
+    def affichage_match(self,nom_fichier):
+        # print("\nYYYYYYYYYYYY",self.vectordb._collection.get(include=["metadatas"]))
+
+        print("[INFO] Affichage match source !\n")
+
+        if not nom_fichier:
+            print("[WARN] Aucun nom de fichier fourni, suppression annulée.\n")
+            return
+
+        if not self.vectordb:
+            self.vectordb = self.load()
+
+        # 1) Voir ce qui correspond au filtre dans la collection Chroma native
+        matches = self.vectordb.get(
+            where={"source": nom_fichier},
+            include=["metadatas"]
+        )
+        print("IDs trouvés:", matches.get("ids", []))
 
 
     def delete_all(self):
@@ -121,6 +164,7 @@ class ChromaDB:
     def mise_a_jour_metadata(self):
         all_chunks = self.get_chunks_db()
         all_chunks = emb.augmentation_metadonne(all_chunks)
+        print(all_chunks)
         doc_all_chunks = dicts_to_documents(all_chunks)
         self.overwrite_db(doc_all_chunks)
         print("[INFO] Mise à jour des métadonné de ChromaDB")
@@ -161,9 +205,10 @@ class ChromaDB:
     def write_all_chunks(self):
         import json
         import os
-        if not self.vectordb:
-            print("[INFO] Construction Index")
-            self.vectordb = self.load()
+        
+        print("[INFO] Construction Index")
+
+        self.vectordb = self.load()
 
         # Récupérer le chemin racine du projet en prenant le dossier parent du dossier du script
         parent_dir = os.path.abspath(os.path.join(os.getcwd(), 'data'))
@@ -200,6 +245,8 @@ class ChromaDB:
 
     def overwrite_db(self, all_chunks):
         self.delete_all()
+        print(f"Suppression :\n {self.get_chunks_db()}")
         self.save(all_chunks)
+        # print(f"Ajout :\n {self.get_chunks_db()}")
     
 

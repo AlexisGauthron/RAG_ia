@@ -1,9 +1,9 @@
 import torch
 
 def test_utilisation_GPU():
+    print("\n")
+    print("##################### TEST GPU #######################")
     if torch.cuda.is_available():
-        print("\n")
-        print("##################### TEST GPU #######################")
         print("\n")
         print("GPU is available.")
         print(f"Number of GPUs: {torch.cuda.device_count()}")

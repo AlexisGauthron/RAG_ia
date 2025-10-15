@@ -18,5 +18,7 @@ databa = db.ChromaDB(modele_emb)
 
 databa.mise_a_jour_metadata()
 
+# print(databa.get_chunks_db())
 
-databa.get_chunks_db()
+databa.write_all_chunks()
+
