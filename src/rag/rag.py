@@ -38,7 +38,7 @@ CHEMIN_FICHIER = chemindossier()
 
 
 class RAG:
-    def __init__(self, device, embedder, llm = mode_oll.model_Ollama(0), llm_retriever = mode_oll.model_Ollama(0), prompt_model = prompt.Prompt(1), mode: str = "default"):
+    def __init__(self, device, embedder, llm, llm_retriever, prompt_model, mode):
 
         self.device = device  
         self.embedder = embedder  
@@ -154,11 +154,7 @@ class RAG:
                 if question.lower() == "exit":
                     break
                 
-                if self.mode != "default":
-                    self.check_rag_filtre(question)  # Optionnel : pour déboguer les filtres
-
-    
-                result = self.rag.invoke({"query": question})
+                result = self.chat_rag(question)
 
                 print("📘 Question :", question,"\n\n")
                 print("💬 Réponse :", result["result"],"\n\n")
@@ -166,7 +162,7 @@ class RAG:
             
                 # Affichage des sources (uniques)
                 print("📚 Sources utilisées :")
-                if selection_chunk == "score":
+                if selection_chunk != "default":
                     self.chunks_selectionne_with_score(question)
                 else:
                     self.chunks_selectionne_unique(result)

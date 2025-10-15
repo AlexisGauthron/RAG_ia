@@ -10,10 +10,4 @@ import src.front.cli as cli
 
 Interface = cli.CLI()
 
-model_ollama = ["llama3.2:3b","llama3.2:1b","mistral:7b-instruct","deepseek-r1:8b"]
-
-# LLM par défaut 
-Interface.test_llm()
-
-## LLM Choisie
-# Interface.test_llm(model_ollama[0])
+Interface.delete_all_files()

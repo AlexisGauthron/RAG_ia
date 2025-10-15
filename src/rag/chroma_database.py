@@ -33,6 +33,9 @@ def is_list_of_dicts(x, *, allow_empty=True) -> bool:
         return allow_empty
     return all(isinstance(item, dict) for item in x)
 
+# Transformer la liste d'objets Document en liste de dict {text, metadata}
+def documents_to_dict(results: list[Document]) -> list[dict]:
+    return [{'text': doc.page_content, 'metadata': doc.metadata} for doc in results]
 
 
 
@@ -71,12 +74,12 @@ class ChromaDB:
         return self.vectordb
 
 
-    def delete_files(self, nom_fichier: str):
+    def delete_files(self, nom_fichier: str, check_doublons: bool = False):
         """
         Supprime tous les chunks dont la métadonnée `source`
         correspond au nom de fichier fourni.
         """
-        print("[INFO] Section Deletes files doubles !\n")
+        print(f"[INFO] Section Deletes files {nom_fichier} !\n")
 
         if not nom_fichier:
             print("[WARN] Aucun nom de fichier fourni, suppression annulée.\n")
@@ -90,18 +93,21 @@ class ChromaDB:
             return
 
         try:
-            self.affichage_match(nom_fichier)
-            deleted_ids = self.vectordb.delete(where={"source": nom_fichier})
+            ids = self.affichage_match(nom_fichier)
 
-            print("Delete_ids",deleted_ids)
-            nb_deleted = len(deleted_ids) if deleted_ids else 0
-            if nb_deleted != 0:
-                print(f"[INFO] {nb_deleted} chunk(s) supprimé(s) pour source='{nom_fichier}'.\n")
-                print(f"[INFO] Suppression doublons database!\n")
+            if ids:
+                self.vectordb.delete(ids=ids)
+                print(f"[INFO] {len(ids)} chunk(s) supprimé(s) pour source='{nom_fichier}'.")
+                if check_doublons:
+                    print(f"[INFO] Suppression doublons database!\n")
                 return 1
             else:
-                print(f"[INFO] Aucune suppression nécéssaire !\n")
+                print("[INFO] Aucun chunk à supprimer pour cette source.")
+                if check_doublons:
+                    print(f"[INFO] Pas de doublons dans la database!\n")
                 return 0
+
+
                 
 
         except Exception as e:
@@ -109,24 +115,26 @@ class ChromaDB:
 
 
 
-    def affichage_match(self,nom_fichier):
-        # print("\nYYYYYYYYYYYY",self.vectordb._collection.get(include=["metadatas"]))
-
+    def affichage_match(self, nom_fichier: str):
         print("[INFO] Affichage match source !\n")
-
-        if not nom_fichier:
-            print("[WARN] Aucun nom de fichier fourni, suppression annulée.\n")
-            return
 
         if not self.vectordb:
             self.vectordb = self.load()
+        if not self.vectordb:
+            print("[ERROR] Impossible de charger l'index.\n")
+            return []
 
-        # 1) Voir ce qui correspond au filtre dans la collection Chroma native
-        matches = self.vectordb.get(
+        # Selon ta version, utiliser la collection interne est plus robuste :
+        collection = getattr(self.vectordb, "_collection", self.vectordb)
+
+        # include sans "ids" (ids est toujours renvoyé)
+        matches = collection.get(
             where={"source": nom_fichier},
-            include=["metadatas"]
+            include=["metadatas"],      # ou [] si tu n’as pas besoin des metadatas
         )
-        print("IDs trouvés:", matches.get("ids", []))
+        ids = matches.get("ids", [])
+        print("[INFO] Nombre de matches :", len(ids), "\n")
+        return ids
 
 
     def delete_all(self):
@@ -153,7 +161,7 @@ class ChromaDB:
         results = self.vectordb.similarity_search("", k=1000)
         
          # Transformer la liste d'objets Document en liste de dict {text, metadata}
-        chunks = [{'text': doc.page_content, 'metadata': doc.metadata} for doc in results]
+        chunks = documents_to_dict(results)
 
         # print("Chunks :\n",chunks)
     
@@ -164,7 +172,7 @@ class ChromaDB:
     def mise_a_jour_metadata(self):
         all_chunks = self.get_chunks_db()
         all_chunks = emb.augmentation_metadonne(all_chunks)
-        print(all_chunks)
+        print("\n[DEMO] Augmentation Metadata exemple", all_chunks[0])
         doc_all_chunks = dicts_to_documents(all_chunks)
         self.overwrite_db(doc_all_chunks)
         print("[INFO] Mise à jour des métadonné de ChromaDB")

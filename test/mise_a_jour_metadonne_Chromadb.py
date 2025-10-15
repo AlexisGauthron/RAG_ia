@@ -6,14 +6,8 @@ src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if src_path not in sys.path:
     sys.path.insert(0, src_path)
 
+
 import src.front.cli as cli
 
 Interface = cli.CLI()
-
-model_ollama = ["llama3.2:3b","llama3.2:1b","mistral:7b-instruct","deepseek-r1:8b"]
-
-# LLM par défaut 
-Interface.test_llm()
-
-## LLM Choisie
-# Interface.test_llm(model_ollama[0])
+Interface.mise_a_jour_metadata()

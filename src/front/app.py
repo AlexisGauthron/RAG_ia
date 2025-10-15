@@ -25,7 +25,7 @@ all_extension = lf.LISTE_FICHIER_ACCEPTE
 extension = lf.LISTE_ACTUEL
 
 
-CHEMIN_DOSSIER_RAG = f"{CHEMIN_FICHIER}/data_rag"
+CHEMIN_FICHIER_RAG = f"{CHEMIN_FICHIER}/data_rag"
 import src.front.module_app as mapp
 
 import src.modele.modele_LLM_ollama as mode_oll
@@ -34,8 +34,8 @@ import src.modele.modele_LLM_ollama as mode_oll
 class App():
     def __init__(self):
         
-        self.app = mapp.module_app(embed_model=0, prompt_model=1, directory=CHEMIN_FICHIER)
-        self.data_rag = gf.find_all_files(CHEMIN_DOSSIER_RAG)
+        self.app = mapp.module_app(embed_model=0, prompt_model=1, directory=CHEMIN_FICHIER_RAG)
+        self.data_rag = gf.find_all_files(CHEMIN_FICHIER_RAG)
         pass
 
     
@@ -43,7 +43,7 @@ class App():
         st.title('Bonjour, bienvenue sur mon RAG!')
 
     def take_all_files(self):
-        self.data_rag = gf.find_all_files(CHEMIN_DOSSIER_RAG)
+        self.data_rag = gf.find_all_files(CHEMIN_FICHIER_RAG)
 
     def upload_fichier(self,name_key,):
 
@@ -60,12 +60,30 @@ class App():
                     nom_entier = f"{CHEMIN_FICHIER}/{nom_subdir}"
                     # Vous pouvez modifier cela selon vos besoins
                     saved_paths = [lf.save_uploaded_file(f, subdir=nom_subdir, dossier=CHEMIN_FICHIER) for f in uploaded_files]
-                    st.success(f"{len(saved_paths)} fichier(s) enregistré(s) dans: {CHEMIN_FICHIER}/{nom_subdir}")
                     for p in saved_paths:
                         st.write(str(p))
                     # (Optionnel) garder les chemins pour usage ultérieur
-                    st.session_state["uploaded_paths"] = [str(p) for p in saved_paths]
-                    self.app.telechargement(nom_entier)
+                    # st.session_state["uploaded_paths"] = [str(p) for p in saved_paths]
+                    doublons = self.app.telechargement(nom_entier)
+                    if doublons == 1:
+                        message = f"{len(saved_paths)} fichiers enregistré cependant suppression doublons"
+                        st.markdown(
+                            f"""
+                            <div style="
+                                padding: 0.75rem 1rem;
+                                border-radius: 0.5rem;
+                                background-color: #ffa726;
+                                color: #1f1f1f;
+                                font-weight: 600;
+                            ">
+                                {message}
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        st.success(f"{len(saved_paths)} fichiers enregistré")
+
         
 
     def discuter(self):
@@ -98,7 +116,7 @@ class App():
     def sidebar(self):
 
         # Sidebar avec un selectbox (menu dépliant)
-        fichiers = gf.find_all_files(CHEMIN_DOSSIER_RAG)
+        fichiers = gf.find_all_files(CHEMIN_FICHIER_RAG)
         
         with st.sidebar:
             st.header("Documents")  # Titre dans la sidebar
@@ -152,7 +170,7 @@ class App():
                     with cols[2]:
                         if st.button("X", key=f"del_{i}"):
                             self.app.delete_files(fichier)
-                            fichier = gf.find_all_files(CHEMIN_DOSSIER_RAG)
+                            fichier = gf.find_all_files(CHEMIN_FICHIER_RAG)
                             st.rerun()
 
 

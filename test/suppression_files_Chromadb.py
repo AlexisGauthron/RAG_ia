@@ -10,10 +10,11 @@ import src.front.cli as cli
 
 Interface = cli.CLI()
 
-model_ollama = ["llama3.2:3b","llama3.2:1b","mistral:7b-instruct","deepseek-r1:8b"]
+# exemple fichier de suppression
+test_suppression = ["Horama INGE 4.pdf","GUIDE_ULTIME_INVESTISSEMENT-IMMOBILIER_DUR.pdf"]
+for file in test_suppression:
+    Interface.delete_files(file)
 
-# LLM par défaut 
-Interface.test_llm()
+# Ecrit le chunk dans le dossier data/all_chunks/all_chunks.json
+Interface.write_chunk()
 
-## LLM Choisie
-# Interface.test_llm(model_ollama[0])

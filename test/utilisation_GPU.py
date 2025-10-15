@@ -17,3 +17,6 @@ def test_utilisation_GPU():
         print("\n")
         device = torch.device("cpu")
     return device  
+
+if __name__ == "__main__":
+    test_utilisation_GPU()

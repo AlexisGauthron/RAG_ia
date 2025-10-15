@@ -7,10 +7,9 @@ from langchain_ollama.llms import OllamaLLM
 
 class model_Ollama():
 
-    def __init__(self,index_model):
-        model_ollama = ["llama3.2:3b","llama3.2:1b","mistral:7b-instruct","deepseek-r1:8b"]
+    def __init__(self,model_ollama):
         # Chargement du modèle Ollama via LangChain
-        self.ollama_model = OllamaLLM(model=model_ollama[index_model], base_url=os.getenv("OLLAMA_HOST"))
+        self.ollama_model = OllamaLLM(model=model_ollama, base_url=os.getenv("OLLAMA_HOST"))
         print("[INFO] Chargement model Ollama")
         pass
     

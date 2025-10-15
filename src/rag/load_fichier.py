@@ -109,8 +109,9 @@ def save_uploaded_file(f, subdir: str = "default", dossier = chemindossier()) ->
     # Nom de fichier sécurisé + suffix conservé
     stem = Path(f.name).stem[:80]
     suffix = Path(f.name).suffix.lower()
-    unique = uuid.uuid4().hex[:8]
-    filename = f"{stem}-{unique}{suffix}"
+    # unique = uuid.uuid4().hex[:8]
+    # filename = f"{stem}-{unique}{suffix}"
+    filename = f"{stem}{suffix}"
 
     path = f"{target_dir}/{filename}"
     f.seek(0)  # s’assure qu’on écrit depuis le début

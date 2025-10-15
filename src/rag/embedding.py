@@ -96,6 +96,8 @@ class Embedding_datasource:
     def build_chunk(self, doc: Tuple[str, str], chunk_size: int = 800 , chunk_overlap: int = 120):
         # Récupère le texte et les métadonnées
         chunks = chunk_text(doc, chunk_size, chunk_overlap)
+
+        # Sauvegarde exemple de chunks pour pouvoir créer automatiquement les paramètres 
         self.save_ex_chunks(chunks)
 
         return chunks

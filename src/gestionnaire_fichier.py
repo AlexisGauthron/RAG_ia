@@ -14,13 +14,14 @@ def switch_directory(chemin_entree, chemin_sortie):
     
     entree = Path(chemin_entree)
     sortie = Path(chemin_sortie)
+    print(f"[DEBUG] Destination PATH parametre: {sortie}")
     sortie.mkdir(parents=True, exist_ok=True)
 
     for file_path in find_all_path_files(entree):
+        print(f"\n[DEBUG] Path file :{file_path}\n")
         source_path = Path(file_path)
-        if not source_path.is_file():
-            continue  # ignore dossiers / entrées non fichiers
         destination_path = sortie / source_path.name
+        print(f"[DEBUG] Destination PATH : {destination_path}")
         shutil.copy2(source_path, destination_path)
         
     shutil.rmtree(entree, ignore_errors=False)
