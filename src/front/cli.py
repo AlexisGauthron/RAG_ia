@@ -31,10 +31,19 @@ CHEMIN_FICHIER = chemindossier()
 CHEMIN_FICHIER_RAG = f"{chemindossier()}/data_rag"
 CHEMIN_FICHIER_DATABASE = f"{chemindossier()}/chroma_db"
 
+
+## Choix possibles
+
 modele_embedding = [{"index" : 0, "model" : "sentence-transformers/all-MiniLM-L6-v2"},
                     {"index" : 1, "model" : "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"}]
 
 model_ollama = ["llama3.2:3b","llama3.2:1b","mistral:7b-instruct","deepseek-r1:8b"]
+
+methode_retriever = ["default","filtre"]
+
+selection_chunk = ["default","score"]
+
+
 class CLI:
 
     def __init__(self):
@@ -45,7 +54,7 @@ class CLI:
         self.llm_model = modele_oll.model_Ollama("llama3.2:3b")
         self.llm_retriever_model = modele_oll.model_Ollama("mistral:7b-instruct")
         self.prompt_llm = prompt.Prompt(1)
-        self.methode_retriever = "default"
+        self.methode_retriever = "filtre" 
         self.selection_chunk = "default"
         self.f_embeding = emb.Embedding_datasource()
         self.chromadb = chdt.ChromaDB(self.model_embedder.get_embedder(),self.directory_data_rag)
@@ -110,15 +119,21 @@ class CLI:
         self.chromadb.all_metadata()
 
 
-    def init_RAG(self):
+    def init_RAG(self,index_prompt = -1, modele_llm = "default", modele_llm_retriever = "default", mode_filtre= "default"):
         data = self.chromadb.load()
         self.rag.build_data_rag(data)
-        self.rag.build_pipeline_rag()
-        self.rag.build_retriever()
+        self.rag.build_pipeline_rag(index_prompt,modele_llm,mode_filtre)
+        self.rag.build_retriever(modele_llm_retriever)
 
 
-    def Rag(self):
-        self.rag.chat_with_rag_console(self.selection_chunk)
+    def talk_Rag(self, selection_chunk = "default", mode_filtre = "default"):
+        self.rag.chat_with_rag_console(selection_chunk,mode_filtre)
+
+    def Rag(self,index_prompt = -1, modele_llm = "default", modele_llm_retriever = "default",selection_chunk = "default",mode_filtre = "default"):
+        self.init_RAG(index_prompt, modele_llm, modele_llm_retriever,mode_filtre)
+        self.talk_Rag(selection_chunk,mode_filtre)
+
+
 
 
     def test_llm(self,test_model: str = "default"):

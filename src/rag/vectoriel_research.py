@@ -95,6 +95,11 @@ class Vectoriel_research:
                 description="Auteur du document, si disponible.",
                 type="string",
             ),
+            AttributeInfo(
+                name="extension",
+                description="Extension du fichier (.pdf, etc..)",
+                type="string",
+            ),
         ]
         
         self.document_content_description = "Texte extrait de documents divers (PDF, Word, etc.)."
