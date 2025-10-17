@@ -21,12 +21,13 @@ CHEMIN_FICHIER_RAG = f"{CHEMIN_FICHIER}/data_rag"
 
 
 class module_app:
-    def __init__(self, embed_model, prompt_model: int, directory: str = CHEMIN_FICHIER_RAG):
+    def __init__(self, embed_model, prompt_model: int, directory: str = CHEMIN_FICHIER_RAG, mode_retriever : str = "filtre"):
         self.device = test_GPU.test_utilisation_GPU()
         self.embed_model = modele_Emb.Model_embeddings(self.device,embed_model).get_embedder()
         self.prompt_model = prompt_model
         self.directory_data_rag = directory
         self.directory_importer = f"{CHEMIN_FICHIER}/Importer"
+        self.methode_retriever = mode_retriever
          # Initialisation des composants RAG
 
         self.embedder = emb.Embedding_datasource()
@@ -75,7 +76,7 @@ class module_app:
 
 
     def lancement_RAG(self,llm_model: str, llm_retriever_model: str):
-        self.rag = rg.RAG(self.device,self.embed_model, llm_model, llm_retriever_model)
+        self.rag = rg.RAG(self.device,self.embed_model, llm_model, llm_retriever_model,self.prompt_model, self.methode_retriever)
         embedding_data = self.chromadb.load()
         self.rag.build_data_rag(embedding_data)
         self.rag.build_pipeline_rag()

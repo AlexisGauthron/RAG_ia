@@ -10,7 +10,7 @@ if src_path not in sys.path:
 
 import streamlit as st
 from streamlit.web import cli as stcli
-import glob
+import src.rag.prompt as prompt
 
 
 
@@ -30,11 +30,16 @@ import src.front.module_app as mapp
 
 import src.modele.modele_LLM_ollama as mode_oll
 
+modele_embedding = [{"index" : 0, "model" : "sentence-transformers/all-MiniLM-L6-v2"},
+                    {"index" : 1, "model" : "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"}]
+
+model_ollama = ["llama3.2:3b","llama3.2:1b","mistral:7b-instruct","deepseek-r1:8b"]
+
 ### Debut de l'application Streamlit ###
 class App():
     def __init__(self):
         
-        self.app = mapp.module_app(embed_model=0, prompt_model=1, directory=CHEMIN_FICHIER_RAG)
+        self.app = mapp.module_app(embed_model="sentence-transformers/all-MiniLM-L6-v2", prompt_model=prompt.Prompt(1), directory=CHEMIN_FICHIER_RAG)
         self.data_rag = gf.find_all_files(CHEMIN_FICHIER_RAG)
         pass
 
@@ -88,27 +93,32 @@ class App():
 
     def discuter(self):
 
-        # "Mémoire" pour garder historique du chat
         if "dialogue" not in st.session_state:
             st.session_state.dialogue = []
 
-        # Barre d'input sous forme de formulaire pour UX plus nette
+        if "query_input" not in st.session_state:
+            st.session_state.query_input = ""
+
         with st.form("form_question"):
-            query = st.text_input('Posez votre question...')
+            query = st.text_input('Posez votre question...', value=st.session_state.query_input, key="query_input")
             submit = st.form_submit_button('Envoyer')
 
-        # Gestion de la réponse si bouton cliqué et input non vide
         if submit and query:
-            self.app.lancement_RAG(mode_oll.model_Ollama(1), mode_oll.model_Ollama(1))
-            response = self.app.question_reponse_rag(query)
+            self.app.lancement_RAG("mistral:7b-instruct", "mistral:7b-instruct")
+
+            # Affiche une émoticône/animation de chargement pendant la génération de la réponse
+            with st.spinner("🤖 Le chatbot réfléchit..."):
+                response = self.app.question_reponse_rag(query)
+
             if response is not None:
-                # Ajout question/réponse à l'historique
                 st.session_state.dialogue.append({"question": query, "réponse": response["result"]})
 
-        # Affichage historique du chat
+            st.session_state.query_input = ""
+
         for i, turn in enumerate(st.session_state.dialogue):
             st.markdown(f"**Vous :** {turn['question']}")
             st.write(f"**Chatbot :** {turn['réponse']}")
+
 
 
 

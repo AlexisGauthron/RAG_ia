@@ -35,15 +35,15 @@ CHEMIN_FICHIER = chemindossier()
 #     torch = None
 # # from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
-
+import src.modele.modele_LLM_ollama as modele_oll
 
 class RAG:
     def __init__(self, device, embedder, llm, llm_retriever, prompt_model, mode):
 
         self.device = device  
         self.embedder = embedder  
-        self.llm = llm
-        self.llm_retriever = llm_retriever
+        self.llm = modele_oll.model_Ollama(llm)
+        self.llm_retriever = modele_oll.model_Ollama(llm_retriever)
         self.prompt = prompt_model
         self.mode = mode
 

@@ -149,12 +149,13 @@ class Vectoriel_research:
                 metadata_field_info=self.metadata_field_info,
                 allowed_comparators=self.allowed_comparators,
                 allowed_operators=self.allowed_operators,
+                strict_output_parser= False,
                 enable_limit=True,
                 verbose=True,
             )
 
 
-        print("[INFO] Retriever LLM initialisé.\n\n self.retriever:", self.retriever)
+        # print("[INFO] Retriever LLM initialisé.\n\n self.retriever:", self.retriever)
 
         return self.retriever
 
