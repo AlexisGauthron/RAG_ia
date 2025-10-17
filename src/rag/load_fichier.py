@@ -71,7 +71,8 @@ def load_text_files(data_dir: str = f"{CHEMIN_FICHIER}/data_rag") -> List[Tuple[
     # Filtre selon l'extension
     paths = []
     if not all_files:
-        print(f"[WARN] Aucun fichier trouvé dans le répertoire {data_dir}. \nVeuillez vérifier le chemin : {os.path.abspath(data_dir)}")
+        erreur = ValueError(f"[WARN] Aucun fichier trouvé dans le répertoire {data_dir}. \nVeuillez vérifier le chemin : {os.path.abspath(data_dir)}")
+        raise erreur
     else:
         for f in all_files:
             if os.path.splitext(f)[1] in LISTE_FICHIER_ACCEPTE:

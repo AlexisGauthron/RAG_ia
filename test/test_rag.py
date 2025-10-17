@@ -8,14 +8,18 @@ if src_path not in sys.path:
 
 import src.front.cli as cli
 
-Interface = cli.CLI()
 
 model_ollama = ["llama3.2:3b","llama3.2:1b","mistral:7b-instruct","deepseek-r1:8b"]
 
 selection_chunk = ["default","score"]
 
 
-# Interface.Rag(index_prompt=-1,modele_llm="mistral:7b-instruct")
-
-
-Interface.Rag(index_prompt=-1,modele_llm="mistral:7b-instruct",modele_llm_retriever="mistral:7b-instruct",mode_filtre="filtre")
+if __name__ == "__main__":
+    Interface = cli.CLI()
+    try:
+        # Interface.Rag(index_prompt=-1,modele_llm="mistral:7b-instruct")
+        # Interface.Rag(index_prompt=-1,modele_llm="mistral:7b-instruct",modele_llm_retriever="mistral:7b-instruct",mode_filtre="filtre")
+        Interface.Rag(index_prompt=-1,modele_llm="llama3.2:1b",modele_llm_retriever="llama3.2:1b",mode_filtre="filtre")
+    except Exception as e:
+        print(e)         # affiche seulement: "ValueError: …" ou juste le message selon str(e)
+        sys.exit(1)      # code d'erreur, aucune traceback

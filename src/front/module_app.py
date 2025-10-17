@@ -21,7 +21,7 @@ CHEMIN_FICHIER_RAG = f"{CHEMIN_FICHIER}/data_rag"
 
 
 class module_app:
-    def __init__(self, embed_model, prompt_model: int, directory: str = CHEMIN_FICHIER_RAG, mode_retriever : str = "filtre"):
+    def __init__(self, embed_model, prompt_model: int, directory: str = CHEMIN_FICHIER_RAG, mode_retriever : str = "default"):
         self.device = test_GPU.test_utilisation_GPU()
         self.embed_model = modele_Emb.Model_embeddings(self.device,embed_model).get_embedder()
         self.prompt_model = prompt_model
@@ -54,8 +54,8 @@ class module_app:
         # Augmentation des métas données
         all_chunks = emb.augmentation_metadonne(all_chunks)
         self.chromadb.save(all_chunks)
-        print(f"\n[DEBUG] Parametre chemin : {self.directory}\n")
-        gf.switch_directory(data_folder,self.directory)
+        print(f"\n[DEBUG] Parametre chemin : {self.directory_data_rag}\n")
+        gf.switch_directory(data_folder,self.directory_data_rag)
         print(f"[INFO] Base vectorielle créée et sauvegardée dans {self.chromadb.directory}")
         self.chromadb.write_all_chunks()
         print(f"[INFO] Chunks ecrit dans data/all_chunks/all_chunks.json")

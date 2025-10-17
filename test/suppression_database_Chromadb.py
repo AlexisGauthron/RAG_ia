@@ -10,4 +10,8 @@ import src.front.cli as cli
 
 Interface = cli.CLI()
 
+# Suppression chromadb 
 Interface.delete_all_files()
+
+# Suppression chromadb + dossier fichier data_rag
+# Interface.delete_all_files(dossier=True)

@@ -1,0 +1,6 @@
+# Ignorer tous les dossiers __pycache__ partout
+**/__pycache__/
+
+# Fichiers bytecode Python
+*.py[cod]
+*$py.class

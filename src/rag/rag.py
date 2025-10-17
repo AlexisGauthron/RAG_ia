@@ -71,8 +71,8 @@ class RAG:
 
 
         if not self.embedding_data:
-            print("[WARN] L'index n'est pas construit.")
-            return []
+            message_erreur = ValueError("[WARN] L'index n'est pas construit.")
+            raise message_erreur
         
         self.vestor_research = vec.Vectoriel_research(self.embedding_data)
         # print("\n[DEBUG] model",self.llm_retriever)
@@ -101,7 +101,7 @@ class RAG:
         else: 
             prompt = Prompt.Prompt(index_prompt).get_prompt()
 
-        print(f"[INFO] Prompt utilisé : {prompt.template}")
+        # print(f"[INFO] Prompt utilisé : {prompt.template}")
 
         if modele_llm == "default":
             llm = self.llm

@@ -51,11 +51,14 @@ class CLI:
         self.directory_file_rag = CHEMIN_FICHIER_RAG 
         self.directory_data_rag = CHEMIN_FICHIER_DATABASE
         self.model_embedder = modele_Emb.Model_embeddings(self.device,modele_embedding[0]["model"])
-        self.llm_model = modele_oll.model_Ollama("llama3.2:3b")
-        self.llm_retriever_model = modele_oll.model_Ollama("mistral:7b-instruct")
+        # self.llm_model = "llama3.2:3b"
+        # self.llm_retriever_model = "mistral:7b-instruct"
+        self.llm_model = "llama3.2:1b"
+        self.llm_retriever_model = "llama3.2:1b"
         self.prompt_llm = prompt.Prompt(1)
         self.methode_retriever = "filtre" 
         self.selection_chunk = "default"
+        self.message_debug = False
         self.f_embeding = emb.Embedding_datasource()
         self.chromadb = chdt.ChromaDB(self.model_embedder.get_embedder(),self.directory_data_rag)
         self.rag = rg.RAG(self.device,self.model_embedder.get_embedder(), self.llm_model, self.llm_retriever_model,self.prompt_llm,self.methode_retriever)
@@ -63,29 +66,35 @@ class CLI:
 
 
     def chargement_dossier_chromadb(self):
-        print("[INFO] Initialisation Chargement fichier\n")
-        data_folder = self.directory_file_rag
-        data_folder_path = Path(data_folder)
-        data_folder_path.mkdir(parents=True, exist_ok=True)
+        try:
+            print("[INFO] Initialisation Chargement fichier\n")
+            data_folder = self.directory_file_rag
+            data_folder_path = Path(data_folder)
+            data_folder_path.mkdir(parents=True, exist_ok=True)
 
-        for file in gf.find_all_files(data_folder):
-            self.chromadb.delete_files(file)
+            for file in gf.find_all_files(data_folder):
+                self.chromadb.delete_files(file)
 
-        # Chargement des données et sauvegarde dans la database
-        docs = lf.load_text_files(data_folder)
-        all_chunks = self.f_embeding.build_all_chunks(docs)
-        # Transformer la liste d'objets Document en liste de dict {text, metadata}
-        all_chunks = chdt.documents_to_dict(all_chunks)
-        # Augmentation des métas données
-        all_chunks = emb.augmentation_metadonne(all_chunks)
-        self.chromadb.save(all_chunks)
+            # Chargement des données et sauvegarde dans la database
+            try:
+                docs = lf.load_text_files(data_folder)
+            except Exception:
+                raise 
 
-        # Si les deux dossiers différents 
-        if not os.path.samefile(data_folder, self.directory_file_rag):
-            gf.switch_directory(data_folder,self.directory_file_rag)
+            all_chunks = self.f_embeding.build_all_chunks(docs)
+            # Transformer la liste d'objets Document en liste de dict {text, metadata}
+            all_chunks = chdt.documents_to_dict(all_chunks)
+            # Augmentation des métas données
+            all_chunks = emb.augmentation_metadonne(all_chunks)
+            self.chromadb.save(all_chunks)
 
-        print(f"[INFO] Base vectorielle créée et sauvegardée dans {self.directory_data_rag}")
+            # Si les deux dossiers différents 
+            if not os.path.samefile(data_folder, self.directory_file_rag):
+                gf.switch_directory(data_folder,self.directory_file_rag)
 
+            print(f"[INFO] Base vectorielle créée et sauvegardée dans {self.directory_data_rag}")
+        except Exception:
+            raise 
 
 
         
@@ -101,12 +110,14 @@ class CLI:
         print(f"[INFO] Chunks ecrit dans data/all_chunks/all_chunks.json")
 
 
-    def delete_all_files(self):
+    def delete_all_files(self,dossier = False):
+        print("Suppression Chromadb !\n")
         self.chromadb.delete_all()
-        print("Dossier data_rag supprimer !!!\n")
-        p = Path(CHEMIN_FICHIER_RAG)
-        if p.is_dir():
-            shutil.rmtree(p)
+        if dossier == True:
+            print("Dossier data_rag supprimer !\n")
+            p = Path(CHEMIN_FICHIER_RAG)
+            if p.is_dir():
+                shutil.rmtree(p)
 
     def mise_a_jour_metadata(self):
         self.chromadb.mise_a_jour_metadata()
@@ -119,18 +130,23 @@ class CLI:
         self.chromadb.all_metadata()
 
 
-    def init_RAG(self,index_prompt = -1, modele_llm = "default", modele_llm_retriever = "default", mode_filtre= "default"):
+    def init_RAG(self,index_prompt = -1, modele_llm = "default", modele_llm_retriever = "default", mode_filtre= "default",message_debug = False):
         data = self.chromadb.load()
         self.rag.build_data_rag(data)
         self.rag.build_pipeline_rag(index_prompt,modele_llm,mode_filtre)
-        self.rag.build_retriever(modele_llm_retriever)
-
+        try:
+            self.rag.build_retriever(modele_llm_retriever)
+        except Exception:
+            raise
 
     def talk_Rag(self, selection_chunk = "default", mode_filtre = "default"):
         self.rag.chat_with_rag_console(selection_chunk,mode_filtre)
 
-    def Rag(self,index_prompt = -1, modele_llm = "default", modele_llm_retriever = "default",selection_chunk = "default",mode_filtre = "default"):
-        self.init_RAG(index_prompt, modele_llm, modele_llm_retriever,mode_filtre)
+    def Rag(self,index_prompt = -1, modele_llm = "default", modele_llm_retriever = "default",selection_chunk = "default",mode_filtre = "default", message_debug = False):
+        try:
+            self.init_RAG(index_prompt, modele_llm, modele_llm_retriever,mode_filtre,message_debug)
+        except Exception:
+            raise
         self.talk_Rag(selection_chunk,mode_filtre)
 
 

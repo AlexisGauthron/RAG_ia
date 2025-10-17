@@ -69,7 +69,7 @@ class App():
                         st.write(str(p))
                     # (Optionnel) garder les chemins pour usage ultérieur
                     # st.session_state["uploaded_paths"] = [str(p) for p in saved_paths]
-                    doublons = self.app.telechargement(nom_entier)
+                    doublons = self.app.telechargement()
                     if doublons == 1:
                         message = f"{len(saved_paths)} fichiers enregistré cependant suppression doublons"
                         st.markdown(
@@ -92,32 +92,41 @@ class App():
         
 
     def discuter(self):
+        # Init état
+        st.session_state.setdefault("dialogue", [])
+        st.session_state.setdefault("query_input", "")
 
-        if "dialogue" not in st.session_state:
-            st.session_state.dialogue = []
+        # Callback de soumission (autorisé à modifier session_state d'un widget)
+        def _on_submit():
+            q = st.session_state.get("query_input", "").strip()
+            if not q:
+                return
 
-        if "query_input" not in st.session_state:
-            st.session_state.query_input = ""
+            # Lance ton RAG
+            self.app.lancement_RAG("llama3.2:1b", "llama3.2:1b")
 
-        with st.form("form_question"):
-            query = st.text_input('Posez votre question...', value=st.session_state.query_input, key="query_input")
-            submit = st.form_submit_button('Envoyer')
-
-        if submit and query:
-            self.app.lancement_RAG("mistral:7b-instruct", "mistral:7b-instruct")
-
-            # Affiche une émoticône/animation de chargement pendant la génération de la réponse
+            # Traitement + affichage spinner
             with st.spinner("🤖 Le chatbot réfléchit..."):
-                response = self.app.question_reponse_rag(query)
+                response = self.app.question_reponse_rag(q)
 
             if response is not None:
-                st.session_state.dialogue.append({"question": query, "réponse": response["result"]})
+                st.session_state.dialogue.append(
+                    {"question": q, "réponse": response["result"]}
+                )
 
+            # IMPORTANT : on peut modifier ici car on est dans le callback
             st.session_state.query_input = ""
 
-        for i, turn in enumerate(st.session_state.dialogue):
-            st.markdown(f"**Vous :** {turn['question']}")
-            st.write(f"**Chatbot :** {turn['réponse']}")
+        # Formulaire
+        with st.form("form_question"):
+            # Ne PAS passer 'value=' quand on a 'key=' géré par session_state
+            st.text_input("Posez votre question...", key="query_input")
+            st.form_submit_button("Envoyer", on_click=_on_submit)
+
+        # Historique
+        for turn in st.session_state.dialogue:
+            st.markdown(f"**Vous :** {turn['question']}")
+            st.write(f"**Chatbot :** {turn['réponse']}")
 
 
 

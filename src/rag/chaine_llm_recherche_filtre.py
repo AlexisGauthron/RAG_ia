@@ -104,7 +104,11 @@ class CustomOutputParser(StructuredQueryOutputParser):
 
 
     def parse(self, text: str) -> StructuredQuery:
-        data = self.traitement_parse(text)
+        try: 
+            data = self.traitement_parse(text)
+        except Exception as e:
+            data = "Erreur"
+
         print(f"\n[DEBUG] DATA : {data}\n\n")
         cleaned_filter = self.parse_filter_string_to_structured_query(data)
 
@@ -114,29 +118,39 @@ class CustomOutputParser(StructuredQueryOutputParser):
     def parse_filter_string_to_structured_query(self, parseur) -> StructuredQuery:
         # Exemple simple : on cherche les comparaisons dans la chaîne du filtre au format simple
         # e.g. eq("source", "cours1_Base.pdf")
+        if parseur == "Erreur":
+            print(f"[WARM] Erreur filtre")
+            return StructuredQuery(
+                        query=None,
+                        filter=None,
+                        limit=None
+                    )
 
         query=parseur.get("query", "")
         filter=parseur.get("filter")
         limit=parseur.get("limit")
         
         pattern = re.compile(r'(\w+)\s*\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*\)')
-        
+        print(f"\n[DEBUG] Filter parse_filter_string_to_structured_query {filter}\n\n")
         comparisons = []
-        for match in pattern.finditer(filter):
-            comp_str, attr, val = match.groups()
+        if filter == None:
+            print(f"[WARM] Erreur filtre valeur {filter} !\n")
+        else:
+            for match in pattern.finditer(filter):
+                comp_str, attr, val = match.groups()
 
-            # Convertit le string du comparateur en enum Comparator, si possible
-            try:
-                comp_enum = Comparator(comp_str.lower())
-            except ValueError:
-                raise ValueError(f"Comparateur inconnu : {comp_str}")
+                # Convertit le string du comparateur en enum Comparator, si possible
+                try:
+                    comp_enum = Comparator(comp_str.lower())
+                except ValueError:
+                    raise ValueError(f"Comparateur inconnu : {comp_str}")
 
-            comp = Comparison(
-                comparator=comp_enum,
-                attribute=attr,
-                value=val
-            )
-            comparisons.append(comp)
+                comp = Comparison(
+                    comparator=comp_enum,
+                    attribute=attr,
+                    value=val
+                )
+                comparisons.append(comp)
 
         # Combine toutes les comparisons avec un AND
         if len(comparisons) == 1:
@@ -164,6 +178,7 @@ class CustomOutputParser(StructuredQueryOutputParser):
         match = re.search(r"```(?:json)?\s*(.*?)```", text, re.DOTALL)
         if not match:
             raise ValueError(f"[ERROR] Aucun bloc JSON valide trouvé : {text}\n")
+            
         json_str = match.group(1)
 
         try:
@@ -272,15 +287,15 @@ def build_custom_self_query_retriever(
     #     print("[ERROR] Test correction_parsing",e)
 
     # --- Étape 6 : Test rapide optionnel
-    if test_filtre:
-        user_querys = ["Show articles about AAPL with sentiment > 0.8 after January 2024","Parle moi du cours1_Base.pdf, précisément de la page 1 !"]
+    # if test_filtre:
+    #     user_querys = ["Show articles about AAPL with sentiment > 0.8 after January 2024","Parle moi du cours1_Base.pdf, précisément de la page 1 !"]
 
-        for user_query in user_querys:
-            raw_llm_output = test_sortie_llm_filtre(user_query,verbose,llm_chain)
-            test_parsing_sortie(custom_output_parser,raw_llm_output,verbose)
+    #     for user_query in user_querys:
+    #         raw_llm_output = test_sortie_llm_filtre(user_query,verbose,llm_chain)
+    #         test_parsing_sortie(custom_output_parser,raw_llm_output,verbose)
 
 
-        # test_creation_filtre(user_query,verbose,retriever)
+    # test_creation_filtre(user_query,verbose,retriever)
 
 
 

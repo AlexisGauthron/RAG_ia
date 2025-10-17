@@ -25,6 +25,22 @@ from src.gestionnaire_fichier import chemindossier
 CHEMIN_FICHIER = chemindossier()
 
 
+from typing import List, Union
+import re
+
+# Compat imports (selon ta version LangChain)
+try:
+    from langchain.schema import Document
+except Exception:
+    from langchain_core.documents import Document
+
+try:
+    from langchain.text_splitter import RecursiveCharacterTextSplitter
+except Exception:
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+import src.rag.nettoyer_data as clean_data
+
 
 def chunk_text(text: str, chunk_size: int = 800 , chunk_overlap: int = 120 ) -> List[str]:
     """
@@ -35,10 +51,22 @@ def chunk_text(text: str, chunk_size: int = 800 , chunk_overlap: int = 120 ) -> 
         chunk_overlap=chunk_overlap,       # chevauchement entre les segments
         separators=["\n\n", "\n", ".", " "]  # ordre de priorité pour les coupures
     )
-    chunks = splitter.split_documents(text)
+
+    # 1) Normaliser en liste de Document + nettoyage
+    # if isinstance(text, str):
+    #     docs_in = [Document(page_content=clean_data.clean_text(text), metadata={})]
+    # elif isinstance(text, list) and all(isinstance(d, Document) for d in text):
+    #     docs_in = [clean_data.clean_document(d) for d in text]
+    # else:
+    #     raise TypeError("text_or_docs doit être une str ou List[Document].")
+    
+    # print(f"\n[DEBUG] Chunks nettoyer : {docs_in}\n\n")
+    # 2) Split en conservant les métadonnées
+    chunks: List[Document] = splitter.split_documents(text)
+
     # print("\n\n",chunks,"\n\n")
 
-    return chunks
+    return chunks   
 
 
 def augmentation_metadonne(chunks: List[Dict]) -> List[Dict]:
