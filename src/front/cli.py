@@ -53,8 +53,8 @@ class CLI:
         self.model_embedder = modele_Emb.Model_embeddings(self.device,modele_embedding[0]["model"])
         # self.llm_model = "llama3.2:3b"
         # self.llm_retriever_model = "mistral:7b-instruct"
-        self.llm_model = "llama3.2:1b"
-        self.llm_retriever_model = "llama3.2:1b"
+        self.llm_model = "llama3.2:3b"
+        self.llm_retriever_model = "mistral:7b-instruct"
         self.prompt_llm = prompt.Prompt(1)
         self.methode_retriever = "filtre" 
         self.selection_chunk = "default"

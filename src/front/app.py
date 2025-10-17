@@ -92,43 +92,71 @@ class App():
         
 
     def discuter(self):
-        # Init état
         st.session_state.setdefault("dialogue", [])
         st.session_state.setdefault("query_input", "")
+        st.session_state.setdefault("filtre_actif", False)
 
-        # Callback de soumission (autorisé à modifier session_state d'un widget)
+        # Ligne supérieure : titre + switch filtre à droite
+        col1, col2 = st.columns([6, 1])
+        with col1:
+            st.markdown("### Chatbot interactif")
+        with col2:
+            st.session_state.filtre_actif = st.toggle("Filtre", value=st.session_state.filtre_actif)
+
         def _on_submit():
             q = st.session_state.get("query_input", "").strip()
             if not q:
                 return
 
-            # Lance ton RAG
-            self.app.lancement_RAG("llama3.2:1b", "llama3.2:1b")
+            # Détermine le mode selon le filtre
+            mode = "filtre" if st.session_state.filtre_actif else "default"
 
-            # Traitement + affichage spinner
+            # Lancer RAG avec le mode dynamique
+            self.app.lancement_RAG("llama3.2:3b", "mistral:7b-instruct", mode_retriever=mode)
+
             with st.spinner("🤖 Le chatbot réfléchit..."):
                 response = self.app.question_reponse_rag(q)
 
             if response is not None:
-                st.session_state.dialogue.append(
-                    {"question": q, "réponse": response["result"]}
-                )
+                st.session_state.dialogue.append({
+                    "question": q,
+                    "réponse": response,
+                    "filtre": st.session_state.filtre_actif,
+                    "mode": mode
+                })
 
-            # IMPORTANT : on peut modifier ici car on est dans le callback
             st.session_state.query_input = ""
 
-        # Formulaire
+        # Entrée utilisateur
         with st.form("form_question"):
-            # Ne PAS passer 'value=' quand on a 'key=' géré par session_state
             st.text_input("Posez votre question...", key="query_input")
             st.form_submit_button("Envoyer", on_click=_on_submit)
 
-        # Historique
-        for turn in st.session_state.dialogue:
-            st.markdown(f"**Vous :** {turn['question']}")
-            st.write(f"**Chatbot :** {turn['réponse']}")
+        # Affichage historique
+        for i, turn in enumerate(st.session_state.dialogue):
+            col1, col2 = st.columns([6, 2])
+            with col1:
+                st.markdown(f"**Vous :** {turn['question']}")
+            with col2:
+                etat_filtre = "🟢 Filtre ON" if turn["filtre"] else "🔴 Filtre OFF"
+                mode_str = f"Mode : `{turn['mode']}`"
+                st.markdown(f"{etat_filtre}  |  {mode_str}")
 
+            st.write(f"**Chatbot :** {turn['réponse']['result']}")
 
+            # Gestion des sources
+            if f"show_sources_{i}" not in st.session_state:
+                st.session_state[f"show_sources_{i}"] = False
+
+            if st.button("Afficher les sources", key=f"btn_{i}"):
+                st.session_state[f"show_sources_{i}"] = not st.session_state[f"show_sources_{i}"]
+
+            if st.session_state[f"show_sources_{i}"]:
+                for doc in turn['réponse']["source_documents"]:
+                    st.markdown(f"**Source :** {doc.metadata.get('source')}")
+                    st.markdown(f"**Page :** {doc.metadata.get('page')}")
+                    st.text(doc.page_content)
+                    st.divider()
 
 
 

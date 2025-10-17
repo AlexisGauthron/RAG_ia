@@ -34,7 +34,8 @@ class module_app:
         self.chromadb = chdt.ChromaDB(self.embed_model)
         self.rag = None
 
-
+    def modifications_mode_retriever(self,mode_retriever):
+        self.methode_retriever = mode_retriever
 
     # Fonction pour créer les embeddings et la base vectorielle
     def telechargement(self):
@@ -75,12 +76,16 @@ class module_app:
         print(f"[INFO] Chunks ecrit dans data/all_chunks/all_chunks.json")
 
 
-    def lancement_RAG(self,llm_model: str, llm_retriever_model: str):
+    def lancement_RAG(self,llm_model: str, llm_retriever_model: str, mode_retriever : str = None):
+        if mode_retriever != None:
+            self.methode_retriever = mode_retriever
+            
         self.rag = rg.RAG(self.device,self.embed_model, llm_model, llm_retriever_model,self.prompt_model, self.methode_retriever)
         embedding_data = self.chromadb.load()
         self.rag.build_data_rag(embedding_data)
         self.rag.build_pipeline_rag()
         self.rag.build_retriever()
+
 
     
     def question_reponse_rag(self, query: str):

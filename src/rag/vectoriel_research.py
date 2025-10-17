@@ -72,7 +72,7 @@ class Vectoriel_research:
             ),
             AttributeInfo(
                 name="source",
-                description="Chemin absolu du fichier source d’où provient le contenu.",
+                description="Nom du fichier avec son extension (ex : Model_IA.pdf).",
                 type="string",
             ),
             AttributeInfo(
@@ -95,11 +95,11 @@ class Vectoriel_research:
                 description="Auteur du document, si disponible.",
                 type="string",
             ),
-            AttributeInfo(
-                name="extension",
-                description="Extension du fichier (.pdf, etc..)",
-                type="string",
-            ),
+            # AttributeInfo(
+            #     name="extension",
+            #     description="Extension du fichier (.pdf, etc..)",
+            #     type="string",
+            # ),
         ]
         
         self.document_content_description = "Texte extrait de documents divers (PDF, Word, etc.)."

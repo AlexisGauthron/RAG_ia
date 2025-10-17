@@ -1,2 +1,5 @@
 import langchain
-print(langchain.__version__)
+import ollama
+
+print("Version Langchain",langchain.__version__)
+print(ollama.__)
