@@ -95,6 +95,8 @@ class App():
         st.session_state.setdefault("dialogue", [])
         st.session_state.setdefault("query_input", "")
         st.session_state.setdefault("filtre_actif", False)
+        st.session_state.setdefault("rag_mode", None)  # Mode RAG actuel
+        st.session_state.setdefault("rag_initialized", False)  # Flag d'initialisation
 
         # Ligne supérieure : titre + switch filtre à droite
         col1, col2 = st.columns([6, 1])
@@ -111,16 +113,20 @@ class App():
             # Détermine le mode selon le filtre
             mode = "filtre" if st.session_state.filtre_actif else "default"
 
-            # Lancer RAG avec le mode dynamique
-            self.app.lancement_RAG("llama3.2:3b", "mistral:7b-instruct", mode_retriever=mode)
+            # Initialiser RAG seulement si nécessaire (pas initialisé OU mode changé)
+            if not st.session_state.rag_initialized or st.session_state.rag_mode != mode:
+                with st.spinner("Initialisation du RAG..."):
+                    self.app.lancement_RAG("llama3.2:3b", "mistral:7b-instruct", mode_retriever=mode)
+                st.session_state.rag_initialized = True
+                st.session_state.rag_mode = mode
 
-            with st.spinner("🤖 Le chatbot réfléchit..."):
+            with st.spinner("Le chatbot reflechit..."):
                 response = self.app.question_reponse_rag(q)
 
             if response is not None:
                 st.session_state.dialogue.append({
                     "question": q,
-                    "réponse": response,
+                    "reponse": response,
                     "filtre": st.session_state.filtre_actif,
                     "mode": mode
                 })
@@ -142,7 +148,7 @@ class App():
                 mode_str = f"Mode : `{turn['mode']}`"
                 st.markdown(f"{etat_filtre}  |  {mode_str}")
 
-            st.write(f"**Chatbot :** {turn['réponse']['result']}")
+            st.write(f"**Chatbot :** {turn['reponse']['result']}")
 
             # Gestion des sources
             if f"show_sources_{i}" not in st.session_state:
@@ -152,7 +158,7 @@ class App():
                 st.session_state[f"show_sources_{i}"] = not st.session_state[f"show_sources_{i}"]
 
             if st.session_state[f"show_sources_{i}"]:
-                for doc in turn['réponse']["source_documents"]:
+                for doc in turn['reponse']["source_documents"]:
                     st.markdown(f"**Source :** {doc.metadata.get('source')}")
                     st.markdown(f"**Page :** {doc.metadata.get('page')}")
                     st.text(doc.page_content)

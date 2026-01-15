@@ -6,36 +6,13 @@ src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if src_path not in sys.path:
     sys.path.insert(0, src_path)
 
-
-from src.modele import modele_LLM_hugface as mod_hug
-
-import src.modele.modele_LLM_ollama as mode_oll
-import src.modele.modele_Embeddings as modele_Emb
-
-import src.rag.embedding as emb
+# Imports des modules internes
+import src.modele.modele_LLM_ollama as modele_oll
 import src.rag.prompt as Prompt
 import src.rag.vectoriel_research as vec
-import test.utilisation_GPU as test_GPU
-import src.rag.chroma_database as chdt
 
 from src.gestionnaire_fichier import chemindossier
 CHEMIN_FICHIER = chemindossier()
-
-
-# from typing import Dict
-
-# from transformers import pipeline
-# try:
-#     from transformers import BitsAndBytesConfig
-# except ImportError:  # pragma: no cover - optional dependency
-#     BitsAndBytesConfig = None
-# try:  # pragma: no cover - optional dependency
-#     import torch
-# except ImportError:  # pragma: no cover
-#     torch = None
-# # from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-
-import src.modele.modele_LLM_ollama as modele_oll
 
 class RAG:
     def __init__(self, device, embedder, llm, llm_retriever, prompt_model, mode):
@@ -48,7 +25,7 @@ class RAG:
         self.mode = mode
 
         self.embedding_data = None
-        self.vestor_research = None
+        self.vector_research = None
         self.retriever = None
         self.rag = None
         
@@ -67,31 +44,25 @@ class RAG:
         if modele_llm_retriever == "default":
             llm_retriever = self.llm_retriever
         else:
-            llm_retriever = mode_oll.model_Ollama(modele_llm_retriever)
+            llm_retriever = modele_oll.model_Ollama(modele_llm_retriever)
 
 
         if not self.embedding_data:
             message_erreur = ValueError("[WARN] L'index n'est pas construit.")
             raise message_erreur
         
-        self.vestor_research = vec.Vectoriel_research(self.embedding_data)
-        # print("\n[DEBUG] model",self.llm_retriever)
+        self.vector_research = vec.Vectoriel_research(self.embedding_data)
         if mode_filtre == "default":
             if self.mode == "default":
-                self.vestor_research.search(top_k= 5)  
+                self.vector_research.search(top_k=5)
             else:
-                self.vestor_research.search_llm(llm_retriever.get_pipeline())
+                self.vector_research.search_llm(llm_retriever.get_pipeline())
         else:
-            self.vestor_research.search_llm(llm_retriever.get_pipeline())
+            self.vector_research.search_llm(llm_retriever.get_pipeline())
 
-        self.retriever = self.vestor_research.get_retriever()
-    
+        self.retriever = self.vector_research.get_retriever()
 
-        # self.retriever = self.embedding_data.as_retriever(search_kwargs={"k": k})
-    
-
-    # 4️⃣ Création du pipeline RAG
-    def build_pipeline_rag(self,index_prompt = -1, modele_llm = "default", mode_filtre = "default"):
+    def build_pipeline_rag(self, index_prompt=-1, modele_llm="default", mode_filtre="default"):
         from langchain.chains import RetrievalQA
         from langchain.prompts import PromptTemplate
 
@@ -106,7 +77,7 @@ class RAG:
         if modele_llm == "default":
             llm = self.llm
         else:
-            llm = mode_oll.model_Ollama(modele_llm)
+            llm = modele_oll.model_Ollama(modele_llm)
         
         self.build_retriever(mode_filtre=mode_filtre)
 
@@ -176,35 +147,29 @@ class RAG:
 
 
     # 5️⃣ Boucle d'interaction
-    def chat_with_rag_console(self,selection_chunk = "default", mode_filtre = "default"):
+    def chat_with_rag_console(self, selection_chunk="default", mode_filtre="default"):
+        """Boucle d'interaction console pour le RAG."""
         print("Posez vos questions (tapez 'exit' pour quitter) :")
 
         while True:
-            # try:
+            try:
                 question = input("Vous: ")
                 if question.lower() == "exit":
                     break
-                
-                result = self.chat_rag(question,mode_filtre)
 
-                print("📘 Question :", question,"\n\n")
-                print("💬 Réponse :", result["result"],"\n\n")
+                result = self.chat_rag(question, mode_filtre)
 
-            
-                # Affichage des sources (uniques)
-                print("📚 Sources utilisées :")
+                print("Question :", question, "\n")
+                print("Reponse :", result["result"], "\n")
+
+                print("Sources utilisees :")
                 if selection_chunk != "default":
                     self.chunks_selectionne_with_score(question)
                 else:
                     self.chunks_selectionne_unique(result)
                 print("\n")
 
-
-                    
-            # except KeyboardInterrupt:
-            #     print("\n(Interruption) Tapez ':exit' pour quitter.")
-            # except Exception as e:
-            #     print(f"[ERR] {type(e).__name__}: {e}")
-
-
-
+            except KeyboardInterrupt:
+                print("\n(Interruption) Tapez 'exit' pour quitter.")
+            except Exception as e:
+                print(f"[ERR] {type(e).__name__}: {e}")

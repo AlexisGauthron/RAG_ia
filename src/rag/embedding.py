@@ -7,28 +7,12 @@ src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if src_path not in sys.path:
     sys.path.insert(0, src_path)
 
-
 # Importations standard
 import re
 import json
-from typing import List, Tuple
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from typing import List, Dict, Union, Tuple
 
-from datetime import datetime
-import os
-from typing import List, Dict
-
-# Importations internes
-import src.rag.load_fichier as lf
-from src.gestionnaire_fichier import chemindossier
-CHEMIN_FICHIER = chemindossier()
-
-
-from typing import List, Union
-import re
-
-# Compat imports (selon ta version LangChain)
+# Compat imports LangChain
 try:
     from langchain.schema import Document
 except Exception:
@@ -39,32 +23,42 @@ try:
 except Exception:
     from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+# Importations internes
+from src.gestionnaire_fichier import chemindossier
 import src.rag.nettoyer_data as clean_data
 
+CHEMIN_FICHIER = chemindossier()
 
-def chunk_text(text: str, chunk_size: int = 800 , chunk_overlap: int = 120 ) -> List[str]:
+
+def chunk_text(text_or_docs: Union[str, List[Document]], chunk_size: int = 800, chunk_overlap: int = 120) -> List[Document]:
     """
-    Découpe un texte en morceaux qui se recouvrent légèrement.
+    Découpe un texte ou une liste de Documents en morceaux qui se recouvrent légèrement.
+    Applique un nettoyage du texte avant le découpage.
+
+    Args:
+        text_or_docs: Texte brut (str) ou liste de Documents LangChain
+        chunk_size: Longueur max de chaque segment (en caractères)
+        chunk_overlap: Chevauchement entre les segments
+
+    Returns:
+        Liste de Documents découpés et nettoyés
     """
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,         # longueur max de chaque segment (en caractères)
-        chunk_overlap=chunk_overlap,       # chevauchement entre les segments
-        separators=["\n\n", "\n", ".", " "]  # ordre de priorité pour les coupures
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        separators=["\n\n", "\n", ".", " "]
     )
 
-    # 1) Normaliser en liste de Document + nettoyage
-    # if isinstance(text, str):
-    #     docs_in = [Document(page_content=clean_data.clean_text(text), metadata={})]
-    # elif isinstance(text, list) and all(isinstance(d, Document) for d in text):
-    #     docs_in = [clean_data.clean_document(d) for d in text]
-    # else:
-    #     raise TypeError("text_or_docs doit être une str ou List[Document].")
-    
-    # print(f"\n[DEBUG] Chunks nettoyer : {docs_in}\n\n")
-    # 2) Split en conservant les métadonnées
-    chunks: List[Document] = splitter.split_documents(text)
+    # Normaliser en liste de Document + nettoyage
+    if isinstance(text_or_docs, str):
+        docs_in = [Document(page_content=clean_data.clean_text(text_or_docs), metadata={})]
+    elif isinstance(text_or_docs, list) and all(isinstance(d, Document) for d in text_or_docs):
+        docs_in = [clean_data.clean_document(d) for d in text_or_docs]
+    else:
+        raise TypeError("text_or_docs doit être une str ou List[Document].")
 
-    # print("\n\n",chunks,"\n\n")
+    # Split en conservant les métadonnées
+    chunks: List[Document] = splitter.split_documents(docs_in)
 
     return chunks   
 
@@ -115,13 +109,13 @@ def augmentation_metadonne(chunks: List[Dict]) -> List[Dict]:
 
 
 
-# Embedding avec HuggingFace 
 class Embedding_datasource:
+    """Classe pour gérer le découpage de documents en chunks."""
+
     def __init__(self):
-        pass
+        self.metadata = set()
 
-
-    def build_chunk(self, doc: Tuple[str, str], chunk_size: int = 800 , chunk_overlap: int = 120):
+    def build_chunk(self, doc: Union[str, List[Document]], chunk_size: int = 800, chunk_overlap: int = 120):
         # Récupère le texte et les métadonnées
         chunks = chunk_text(doc, chunk_size, chunk_overlap)
 
@@ -139,23 +133,7 @@ class Embedding_datasource:
             all_chunks.extend(chunks)
             
         print(f"[INFO] {len(all_chunks)} chunks créés à partir de {len(docs)} documents.")
-        
         return all_chunks
-    
-
-
-
-
-
-
-
-
-
-
-     # BONUSSSSSS : Sauvegarde d'exemples de chunks
-    
-
-
 
     def save_ex_chunks(self, chunks):
         """
@@ -232,18 +210,10 @@ class Embedding_datasource:
 
 
 
-####### Lancement de tests #######
-
-import test.utilisation_GPU as test_GPU
-
-
 if __name__ == "__main__":
-    # Test et utilisation du GPU si disponible
-    device = test_GPU.test_utilisation_GPU()
-
-    Embedding = Embedding_datasource(device)
-    # Embedding.run()
-    print("\n ####### METADATA #######\n",Embedding.get_metadata())
-    # print(Embedding.get_metadata())
+    # Test de la classe Embedding_datasource
+    embedder = Embedding_datasource()
+    print("[INFO] Embedding_datasource initialisé")
+    print("Metadata keys:", embedder.get_metadata())
 
 

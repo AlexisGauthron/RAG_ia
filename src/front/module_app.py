@@ -37,26 +37,32 @@ class module_app:
     def modifications_mode_retriever(self,mode_retriever):
         self.methode_retriever = mode_retriever
 
-    # Fonction pour créer les embeddings et la base vectorielle
     def telechargement(self):
+        """Traite les fichiers importés : supprime les doublons, crée les chunks et sauvegarde."""
         data_folder = self.directory_importer
         data_folder_path = Path(data_folder)
         data_folder_path.mkdir(parents=True, exist_ok=True)
 
-        for file in gf.find_all_path_files(data_folder):
-            print(f"[DEBUG] Nom fichier :{file}\n")
-            doublons = self.chromadb.delete_files(os.path.basename(file),check_doublons=True)
+        # Initialiser doublons à 0 (pas de doublons par défaut)
+        doublons = 0
+        files = gf.find_all_path_files(data_folder)
+
+        for file in files:
+            print(f"[DEBUG] Nom fichier: {file}\n")
+            result = self.chromadb.delete_files(os.path.basename(file), check_doublons=True)
+            # Si au moins un doublon trouvé, on le signale
+            if result == 1:
+                doublons = 1
 
         docs = lf.load_text_files(data_folder)
         all_chunks = self.embedder.build_all_chunks(docs)
-        
         all_chunks = chdt.documents_to_dict(all_chunks)
 
-        # Augmentation des métas données
+        # Augmentation des métadonnées
         all_chunks = emb.augmentation_metadonne(all_chunks)
         self.chromadb.save(all_chunks)
-        print(f"\n[DEBUG] Parametre chemin : {self.directory_data_rag}\n")
-        gf.switch_directory(data_folder,self.directory_data_rag)
+        print(f"\n[DEBUG] Parametre chemin: {self.directory_data_rag}\n")
+        gf.switch_directory(data_folder, self.directory_data_rag)
         print(f"[INFO] Base vectorielle créée et sauvegardée dans {self.chromadb.directory}")
         self.chromadb.write_all_chunks()
         print(f"[INFO] Chunks ecrit dans data/all_chunks/all_chunks.json")
@@ -65,10 +71,11 @@ class module_app:
 
 
 
-    def delete_files(self,nom_fichier):
+    def delete_files(self, nom_fichier: str):
+        """Supprime un fichier de la base vectorielle et du disque."""
         delete = self.chromadb.delete_files(nom_fichier)
         if delete == 1:
-            print("Suprresion fichier !!!\n")
+            print(f"[INFO] Suppression fichier: {nom_fichier}")
             chemin_complet = Path(f"{CHEMIN_FICHIER_RAG}/{nom_fichier}")
             if chemin_complet.is_file():
                 chemin_complet.unlink()
@@ -76,15 +83,23 @@ class module_app:
         print(f"[INFO] Chunks ecrit dans data/all_chunks/all_chunks.json")
 
 
-    def lancement_RAG(self,llm_model: str, llm_retriever_model: str, mode_retriever : str = None):
-        if mode_retriever != None:
+    def lancement_RAG(self, llm_model: str, llm_retriever_model: str, mode_retriever: str = None):
+        """Lance le pipeline RAG avec les modèles spécifiés."""
+        if mode_retriever is not None:
             self.methode_retriever = mode_retriever
-            
-        self.rag = rg.RAG(self.device,self.embed_model, llm_model, llm_retriever_model,self.prompt_model, self.methode_retriever)
+
+        self.rag = rg.RAG(
+            self.device,
+            self.embed_model,
+            llm_model,
+            llm_retriever_model,
+            self.prompt_model,
+            self.methode_retriever
+        )
         embedding_data = self.chromadb.load()
         self.rag.build_data_rag(embedding_data)
+        # build_pipeline_rag() appelle déjà build_retriever() en interne
         self.rag.build_pipeline_rag()
-        self.rag.build_retriever()
 
 
     

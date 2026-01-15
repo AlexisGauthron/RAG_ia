@@ -153,18 +153,23 @@ class ChromaDB:
 
 
     def get_chunks_db(self):
+        """Récupère TOUS les chunks de la base sans limite artificielle."""
         if not self.vectordb:
             print("[INFO] Construction Index")
             self.vectordb = self.load()
-        
-         # Récupérer tous les documents, métadonnées et embeddings
-        results = self.vectordb.similarity_search("", k=1000)
-        
-         # Transformer la liste d'objets Document en liste de dict {text, metadata}
-        chunks = documents_to_dict(results)
 
-        # print("Chunks :\n",chunks)
-    
+        # Utiliser l'API Chroma directement pour récupérer TOUS les documents
+        # (pas de limite de 1000 comme avec similarity_search)
+        all_data = self.vectordb._collection.get(include=["documents", "metadatas"])
+
+        chunks = []
+        documents = all_data.get("documents", [])
+        metadatas = all_data.get("metadatas", [])
+
+        for i, doc in enumerate(documents):
+            metadata = metadatas[i] if i < len(metadatas) else {}
+            chunks.append({"text": doc, "metadata": metadata})
+
         return chunks
     
 
@@ -211,36 +216,33 @@ class ChromaDB:
     
 
     def write_all_chunks(self):
+        """Exporte tous les chunks dans un fichier JSON."""
         import json
-        import os
-        
-        print("[INFO] Construction Index")
 
-        self.vectordb = self.load()
+        print("[INFO] Export des chunks...")
 
-        # Récupérer le chemin racine du projet en prenant le dossier parent du dossier du script
-        parent_dir = os.path.abspath(os.path.join(os.getcwd(), 'data'))
-        output_dir = os.path.join(parent_dir, "all_chunks")
+        if not self.vectordb:
+            self.vectordb = self.load()
+
+        # Chemin de sortie
+        output_dir = f"{CHEMIN_FICHIER}/all_chunks"
         os.makedirs(output_dir, exist_ok=True)
-
-        # Nom du fichier json de sortie
         output_file = os.path.join(output_dir, "all_chunks.json")
 
-        # Récupérer tous les documents (chunks) du vectordb - méthode depending du vectordb
-        # Ici version générique pour des vecteurs Chroma
-        all_docs = self.vectordb._collection.get()  # recupère tous les enregistrements dans une liste
-        # Chaque doc contient typiquement 'documents' (chunk textuel) et 'metadatas'
+        # Récupérer tous les documents via l'API Chroma
+        all_docs = self.vectordb._collection.get(include=["documents", "metadatas"])
 
-        # Formater la sortie : liste de {chunk: texte, metadata: dict}
-        data_to_export = []
-        for doc in all_docs['documents']:
-            index = all_docs['documents'].index(doc)
-            chunk_text = doc
-            metadata = all_docs['metadatas'][index] if 'metadatas' in all_docs and index < len(all_docs['metadatas']) else {}
-            data_to_export.append({
-                "chunk": chunk_text,
-                "metadata": metadata
-            })
+        documents = all_docs.get("documents", [])
+        metadatas = all_docs.get("metadatas", [])
+
+        # Algorithme O(n) : utiliser enumerate au lieu de .index()
+        data_to_export = [
+            {
+                "chunk": doc,
+                "metadata": metadatas[i] if i < len(metadatas) else {}
+            }
+            for i, doc in enumerate(documents)
+        ]
 
         # Ecrire dans le fichier JSON
         with open(output_file, 'w', encoding='utf-8') as f:
