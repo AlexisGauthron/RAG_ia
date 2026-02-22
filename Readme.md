@@ -12,9 +12,9 @@ Un chatbot RAG (Retrieval-Augmented Generation) qui permet de poser des question
 
 ## Demo
 
-[![Demo RAG-IA](https://img.youtube.com/vi/4BJ5yane8aQ/maxresdefault.jpg)](https://www.youtube.com/watch?v=4BJ5yane8aQ)
+![Demo RAG-IA](portfolio/demo.gif)
 
-> Cliquez sur l'image pour voir la demonstration complete
+> [![Voir la demo complete sur YouTube](https://img.shields.io/badge/YouTube-Voir%20la%20demo-red?logo=youtube)](https://www.youtube.com/watch?v=_9JMfpYkW9w)
 
 ---
 

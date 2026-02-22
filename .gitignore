@@ -4,3 +4,6 @@
 # Fichiers bytecode Python
 *.py[cod]
 *$py.class
+
+# Video
+video/
