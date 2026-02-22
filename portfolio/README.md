@@ -8,9 +8,6 @@ role: "Developpeur IA Full-Stack"
 youtube: "https://www.youtube.com/watch?v=_9JMfpYkW9w"
 ---
 
-## Apercu
-
-![Demo](demo.gif)
 
 ## Description
 
@@ -20,19 +17,6 @@ L'originalite du projet reside dans son systeme dual de recherche. Le mode par d
 
 L'ensemble tourne entierement en local, sans appel a des APIs cloud, garantissant la confidentialite des donnees. L'interface Streamlit offre un chat fluide avec affichage des sources, gestion des documents par drag-and-drop, et controle en temps reel des parametres de recherche.
 
-## Screenshots
-
-### Interface principale
-![Interface principale](cover.png)
-*Interface Streamlit avec sidebar de gestion des documents, upload drag-and-drop et parametres de recherche.*
-
-### Chat en mode Filtre
-![Chat avec filtre](screenshot1.png)
-*Reponse structuree en mode Filtre ON : le SelfQueryRetriever cible automatiquement le bon document via les metadonnees.*
-
-### Affichage des sources
-![Sources](screenshot2.png)
-*Section Sources depliee montrant les extraits de documents utilises pour generer la reponse, avec metadonnees (fichier, page).*
 
 ## Fonctionnalites principales
 
