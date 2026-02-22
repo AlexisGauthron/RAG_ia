@@ -71,19 +71,90 @@ class module_app:
 
 
 
+    def sync_files(self):
+        """Synchronise ChromaDB et le disque. Supprime les orphelins des deux cotes."""
+        if self.chromadb.vectordb is None:
+            self.chromadb.load()
+        if self.chromadb.vectordb is None:
+            return False
+
+        changed = False
+
+        # Verifier si les sources necessitent une normalisation (chemins complets → basenames)
+        all_data = self.chromadb.vectordb._collection.get(include=["metadatas"])
+        needs_normalization = any(
+            m.get("source", "") != os.path.basename(m.get("source", ""))
+            for m in all_data.get("metadatas", []) if m.get("source")
+        )
+
+        if needs_normalization:
+            print("[SYNC] Normalisation des metadonnees source (chemins complets -> basenames)")
+            self.chromadb.mise_a_jour_metadata()
+            changed = True
+            # Recharger les metadonnees apres normalisation
+            all_data = self.chromadb.vectordb._collection.get(include=["metadatas"])
+
+        # Sources dans ChromaDB (maintenant normalisees)
+        chroma_sources = set(
+            os.path.basename(m.get("source", ""))
+            for m in all_data.get("metadatas", []) if m.get("source")
+        )
+
+        # Fichiers sur disque (filtrer les repertoires)
+        disk_files = set(
+            f for f in gf.find_all_files(self.directory_data_rag)
+            if os.path.isfile(os.path.join(self.directory_data_rag, f))
+        )
+
+        # ChromaDB vide mais fichiers presents → reconstruire la base
+        if not chroma_sources and disk_files:
+            print("[SYNC] ChromaDB vide, reconstruction a partir des fichiers sur disque...")
+            docs = lf.load_text_files(self.directory_data_rag)
+            all_chunks = self.embedder.build_all_chunks(docs)
+            all_chunks = chdt.documents_to_dict(all_chunks)
+            all_chunks = emb.augmentation_metadonne(all_chunks)
+            self.chromadb.save(all_chunks)
+            self.chromadb.write_all_chunks()
+            print(f"[SYNC] ChromaDB reconstruite a partir de {len(disk_files)} fichier(s)")
+            return True
+
+        # Orphelins ChromaDB → supprimer chunks
+        for f in chroma_sources - disk_files:
+            print(f"[SYNC] Suppression chunks orphelins: {f}")
+            self.chromadb.delete_files(f)
+            changed = True
+
+        # Orphelins disque → supprimer fichier
+        for f in disk_files - chroma_sources:
+            print(f"[SYNC] Suppression fichier orphelin: {f}")
+            chemin = Path(os.path.join(self.directory_data_rag, f))
+            if chemin.is_file():
+                chemin.unlink()
+            changed = True
+
+        if changed:
+            self.chromadb.write_all_chunks()
+            print("[SYNC] Synchronisation terminee avec corrections")
+        else:
+            print("[SYNC] ChromaDB et disque sont synchronises")
+
+        return changed
+
     def delete_files(self, nom_fichier: str):
         """Supprime un fichier de la base vectorielle et du disque."""
-        delete = self.chromadb.delete_files(nom_fichier)
-        if delete == 1:
-            print(f"[INFO] Suppression fichier: {nom_fichier}")
-            chemin_complet = Path(f"{CHEMIN_FICHIER_RAG}/{nom_fichier}")
-            if chemin_complet.is_file():
-                chemin_complet.unlink()
+        self.chromadb.delete_files(nom_fichier)
+        print(f"[INFO] Suppression fichier: {nom_fichier}")
+
+        # Toujours supprimer le fichier physique, meme s'il n'etait pas dans ChromaDB
+        chemin_complet = Path(f"{CHEMIN_FICHIER_RAG}/{nom_fichier}")
+        if chemin_complet.is_file():
+            chemin_complet.unlink()
+
         self.chromadb.write_all_chunks()
         print(f"[INFO] Chunks ecrit dans data/all_chunks/all_chunks.json")
 
 
-    def lancement_RAG(self, llm_model: str, llm_retriever_model: str, mode_retriever: str = None):
+    def lancement_RAG(self, llm_model: str, llm_retriever_model: str, mode_retriever: str = None, top_k: int = 6):
         """Lance le pipeline RAG avec les modèles spécifiés."""
         if mode_retriever is not None:
             self.methode_retriever = mode_retriever
@@ -94,7 +165,8 @@ class module_app:
             llm_model,
             llm_retriever_model,
             self.prompt_model,
-            self.methode_retriever
+            self.methode_retriever,
+            top_k=top_k
         )
         embedding_data = self.chromadb.load()
         self.rag.build_data_rag(embedding_data)

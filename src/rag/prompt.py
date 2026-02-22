@@ -10,11 +10,17 @@ class Prompt:
                                                     "Question: {question}\n"
                                                     "Answer:"
                                                 )},
-                         { "index" : 1, "prompt" : ( "Utilise les informations suivantes pour répondre à la question posée.\n"
-                                                    "Si tu ne connais pas la réponse, dis simplement que tu ne sais pas, n'invente pas une réponse.\n\n"
-                                                    "{context}\n\n"
-                                                    "Question : {question}\n"
-                                                    "Réponds de façon détaillée et cite les sources (ex: [source:nom_du_doc])."
+                         { "index" : 1, "prompt" : ( "Tu es un assistant specialise dans l'analyse de documents. "
+                                                    "Reponds UNIQUEMENT a partir des informations presentes dans le contexte ci-dessous.\n\n"
+                                                    "Regles strictes :\n"
+                                                    "- Ne genere JAMAIS d'information qui ne figure pas dans le contexte.\n"
+                                                    "- Si le contexte ne contient pas assez d'elements pour repondre, dis-le clairement.\n"
+                                                    "- Structure ta reponse avec des paragraphes ou des listes a puces si necessaire.\n"
+                                                    "- Cite tes sources entre crochets (ex: [source:nom_du_doc, page X]).\n"
+                                                    "- Sois concis et factuel.\n\n"
+                                                    "Contexte :\n{context}\n\n"
+                                                    "Question : {question}\n\n"
+                                                    "Reponse :"
                                                 )},
                          { "index" : 2, "prompt" : ( """Tu es un assistant. Pour chaque passage référencé en réponse, cite la source en mentionnant le nom ou la position du chunk/document (voir contexte).
                                                     Question : {question}

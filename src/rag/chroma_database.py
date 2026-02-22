@@ -121,18 +121,25 @@ class ChromaDB:
         if not self.vectordb:
             self.vectordb = self.load()
         if not self.vectordb:
-            print("[ERROR] Impossible de charger l'index.\n")
+            print("[ERROR] Impossible de charger l’index.\n")
             return []
 
-        # Selon ta version, utiliser la collection interne est plus robuste :
         collection = getattr(self.vectordb, "_collection", self.vectordb)
 
-        # include sans "ids" (ids est toujours renvoyé)
-        matches = collection.get(
-            where={"source": nom_fichier},
-            include=["metadatas"],      # ou [] si tu n’as pas besoin des metadatas
-        )
-        ids = matches.get("ids", [])
+        # Recuperer tous les documents et filtrer par basename,
+        # car le champ "source" stocke le chemin complet du fichier
+        # alors que nom_fichier est un basename (ex: "document.pdf")
+        all_data = collection.get(include=["metadatas"])
+        all_ids = all_data.get("ids", [])
+        all_metas = all_data.get("metadatas", [])
+
+        # Normaliser les separateurs (\ Windows et / Unix) avant basename
+        ids = [
+            doc_id
+            for doc_id, meta in zip(all_ids, all_metas)
+            if os.path.basename(meta.get("source", "").replace("\\", "/")) == nom_fichier
+        ]
+
         print("[INFO] Nombre de matches :", len(ids), "\n")
         return ids
 
@@ -175,12 +182,30 @@ class ChromaDB:
 
 
     def mise_a_jour_metadata(self):
-        all_chunks = self.get_chunks_db()
-        all_chunks = emb.augmentation_metadonne(all_chunks)
-        print("\n[DEMO] Augmentation Metadata exemple", all_chunks[0])
-        doc_all_chunks = dicts_to_documents(all_chunks)
-        self.overwrite_db(doc_all_chunks)
-        print("[INFO] Mise à jour des métadonné de ChromaDB")
+        """Met a jour les metadonnees en place sans supprimer/recreer la base."""
+        if not self.vectordb:
+            self.load()
+        if not self.vectordb:
+            return
+
+        collection = self.vectordb._collection
+        all_data = collection.get(include=["documents", "metadatas"])
+        ids = all_data.get("ids", [])
+        metadatas = all_data.get("metadatas", [])
+        documents = all_data.get("documents", [])
+
+        if not ids:
+            print("[INFO] Aucun chunk a mettre a jour.")
+            return
+
+        # Construire les chunks pour augmentation_metadonne
+        chunks = [{"text": documents[i], "metadata": metadatas[i]} for i in range(len(ids))]
+        chunks = emb.augmentation_metadonne(chunks)
+
+        # Mettre a jour les metadonnees en place
+        updated_metadatas = [c["metadata"] for c in chunks]
+        collection.update(ids=ids, metadatas=updated_metadatas)
+        print(f"[INFO] Metadonnees mises a jour pour {len(ids)} chunks (in-place)")
 
 
 
@@ -255,8 +280,6 @@ class ChromaDB:
 
     def overwrite_db(self, all_chunks):
         self.delete_all()
-        print(f"Suppression :\n {self.get_chunks_db()}")
         self.save(all_chunks)
-        # print(f"Ajout :\n {self.get_chunks_db()}")
     
 

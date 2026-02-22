@@ -15,14 +15,15 @@ from src.gestionnaire_fichier import chemindossier
 CHEMIN_FICHIER = chemindossier()
 
 class RAG:
-    def __init__(self, device, embedder, llm, llm_retriever, prompt_model, mode):
+    def __init__(self, device, embedder, llm, llm_retriever, prompt_model, mode, top_k=6):
 
-        self.device = device  
-        self.embedder = embedder  
-        self.llm = modele_oll.model_Ollama(llm)
-        self.llm_retriever = modele_oll.model_Ollama(llm_retriever)
+        self.device = device
+        self.embedder = embedder
+        self.llm = modele_oll.model_Ollama(llm, temperature=0.3)
+        self.llm_retriever = modele_oll.model_Ollama(llm_retriever, temperature=0.8)
         self.prompt = prompt_model
         self.mode = mode
+        self.top_k = top_k
 
         self.embedding_data = None
         self.vector_research = None
@@ -50,11 +51,11 @@ class RAG:
         if not self.embedding_data:
             message_erreur = ValueError("[WARN] L'index n'est pas construit.")
             raise message_erreur
-        
-        self.vector_research = vec.Vectoriel_research(self.embedding_data)
+
+        self.vector_research = vec.Vectoriel_research(self.embedding_data, embedder=self.embedder)
         if mode_filtre == "default":
             if self.mode == "default":
-                self.vector_research.search(top_k=5)
+                self.vector_research.search(top_k=self.top_k, llm=self.llm.get_pipeline())
             else:
                 self.vector_research.search_llm(llm_retriever.get_pipeline())
         else:

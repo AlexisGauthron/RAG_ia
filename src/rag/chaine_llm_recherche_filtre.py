@@ -35,6 +35,7 @@ from langchain.chains.query_constructor.ir import (
     Operation,
     )
 import re
+import difflib
 
 
 from langchain.chains.query_constructor.base import StructuredQueryOutputParser
@@ -66,6 +67,10 @@ class CustomOutputParser(StructuredQueryOutputParser):
         default=False,
         description="Si True, lève une erreur si fonction inconnue détectée"
     )
+    available_sources: list = Field(
+        default_factory=list,
+        description="Liste des noms de fichiers disponibles pour le fuzzy matching"
+    )
 
     class Config:
         arbitrary_types_allowed = True
@@ -77,6 +82,7 @@ class CustomOutputParser(StructuredQueryOutputParser):
         *,
         allowed_functions: Optional[Set[str]] = None,
         strict: bool = False,
+        available_sources: list = None,
         **kwargs,
     ):
         base_parser = super().from_components(**kwargs)
@@ -86,6 +92,8 @@ class CustomOutputParser(StructuredQueryOutputParser):
         }
         if allowed_functions is not None:
             init_kwargs["allowed_functions"] = set(allowed_functions)
+        if available_sources is not None:
+            init_kwargs["available_sources"] = available_sources
         return cls(**init_kwargs)
     
 
@@ -130,7 +138,7 @@ class CustomOutputParser(StructuredQueryOutputParser):
         filter=parseur.get("filter")
         limit=parseur.get("limit")
         
-        pattern = re.compile(r'(\w+)\s*\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*\)')
+        pattern = re.compile(r"""(\w+)\s*\(\s*["']([^"']+)["']\s*,\s*["']([^"']+)["']\s*\)""")
         print(f"\n[DEBUG] Filter parse_filter_string_to_structured_query {filter}\n\n")
         comparisons = []
         if filter == None:
@@ -144,6 +152,14 @@ class CustomOutputParser(StructuredQueryOutputParser):
                     comp_enum = Comparator(comp_str.lower())
                 except ValueError:
                     raise ValueError(f"Comparateur inconnu : {comp_str}")
+
+                # Fuzzy match pour l'attribut source
+                if attr == "source" and self.available_sources:
+                    matches = difflib.get_close_matches(val, self.available_sources, n=1, cutoff=0.4)
+                    if matches:
+                        original_val = val
+                        val = matches[0]
+                        print(f'[INFO] Fuzzy match: "{original_val}" → "{val}"')
 
                 comp = Comparison(
                     comparator=comp_enum,
@@ -237,7 +253,10 @@ def build_custom_self_query_retriever(
     strict_output_parser=False,      # nouveau paramètre pour contrôle strict du parseur
     enable_limit=True,
     verbose=False,
-    test_filtre= True,
+    test_filtre=True,
+    search_type="similarity",
+    search_kwargs=None,
+    available_sources=None,
 ):
     
     # Vérification que allowed_operators est bien défini
@@ -262,6 +281,7 @@ def build_custom_self_query_retriever(
     custom_output_parser = CustomOutputParser.from_components(
         allowed_functions=set(allowed_functions) if allowed_functions else None,
         strict=strict_output_parser,
+        available_sources=available_sources or [],
         allowed_comparators=allowed_comparators,
         allowed_operators=allowed_operators,
     )
@@ -279,6 +299,8 @@ def build_custom_self_query_retriever(
         allowed_operators=allowed_operators,
         enable_limit=enable_limit,
         verbose=verbose,
+        search_type=search_type,
+        search_kwargs=search_kwargs or {},
     )
 
     # try:
